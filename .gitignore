@@ -47,3 +47,6 @@ pip-wheel-metadata/
 # Other
 *.bak
 *.tmp
+*.zip
+*.tar.gz
+*.rar
