@@ -4,9 +4,10 @@ from database_manager import DatabaseManager
 
 
 class UIComponents:
-    def __init__(self, db_manager: DatabaseManager, version: str):
+    def __init__(self, db_manager: DatabaseManager, version: str, model: str):
         self.db_manager = db_manager
         self.version = version
+        self.model = model
 
     def render_sidebar(self) -> Optional[int]:
         """Renderiza el sidebar con gestión de conversaciones"""
@@ -147,7 +148,7 @@ class UIComponents:
         stats = self.db_manager.get_conversation_stats()
         
         st.sidebar.markdown(f"""
-        - **Modelo**: GPT-4
+        - **Modelo**: {self.model.upper()}
         - **Versión**: U-Tutor v{self.version}
         - **Funciones**: 
           - ✅ Historial persistente

@@ -27,7 +27,7 @@ class UTutorApp:
         
         # Inicializar componentes
         self.db_manager = DatabaseManager()
-        self.ui_components = UIComponents(self.db_manager, self.version)
+        self.ui_components = UIComponents(self.db_manager, self.version, self.model)
         
         if not self.api_key:
             st.error("❌ Por favor, configura tu OPENAI_API_KEY en el archivo .env")
