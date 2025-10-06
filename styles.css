@@ -1,0 +1,774 @@
+/* U-TUTOR v3.0 - Paletas de colores profesionales con responsive design mejorado */
+
+/* Variables CSS para paletas profesionales */
+:root {
+    /* Paleta Oscura - Azul Profundo */
+    --dark-primary: #1a1a2e;
+    --dark-secondary: #16213e;
+    --dark-accent: #2d3748;
+    --dark-accent-light: #4a5568;
+    --dark-text: #e8e8e8;
+    --dark-text-accent: #a0c4ff;
+    --dark-border: #4a5568;
+    
+    /* Paleta Gris - Azul Grisáceo */
+    --gray-primary: #f5f7fa;
+    --gray-secondary: #c3cfe2;
+    --gray-accent: #667eea;
+    --gray-accent-dark: #764ba2;
+    --gray-accent-darker: #5a67d8;
+    --gray-text: #2d3748;
+    --gray-text-light: #2c3e50;
+    --gray-border: #e2e8f0;
+    --gray-border-light: #f7fafc;
+    
+    /* Responsive breakpoints */
+    --mobile-breakpoint: 480px;
+    --tablet-breakpoint: 768px;
+    --desktop-breakpoint: 1024px;
+    
+    /* Spacing responsive */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+}
+
+/* Estilos base responsivos */
+.main .block-container {
+    padding: var(--spacing-xl);
+    background: transparent;
+    min-height: 100vh;
+}
+
+/* Mensajes de chat responsivos */
+.stChatMessage[data-testid="user"] {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+    margin-bottom: var(--spacing-md);
+}
+
+.stChatMessage[data-testid="user"] .stChatMessage__content {
+    margin-left: auto;
+    margin-right: 0;
+    max-width: 60%;
+    text-align: right;
+    padding: 12px 16px;
+    border-radius: 18px 18px 4px 18px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.stChatMessage[data-testid="assistant"] {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    margin-bottom: var(--spacing-md);
+}
+
+.stChatMessage[data-testid="assistant"] .stChatMessage__content {
+    margin-left: 0;
+    margin-right: auto;
+    max-width: 60%;
+    text-align: left;
+    padding: 12px 16px;
+    border-radius: 18px 18px 18px 4px;
+    font-weight: 400;
+    line-height: 1.5;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+/* Animaciones mejoradas */
+.stChatMessage__content > div {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Botones responsivos */
+.stButton > button {
+    border-radius: 8px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.stButton > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Inputs responsivos */
+.stTextInput > div > div > input,
+.stChatInput > div > div > div > textarea {
+    border-radius: 8px;
+    padding: var(--spacing-sm);
+    transition: all 0.3s ease;
+    border: 1px solid;
+}
+
+.stTextInput > div > div > input:focus,
+.stChatInput > div > div > div > textarea:focus {
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+    transform: scale(1.02);
+}
+
+/* Sidebar responsivo */
+[data-testid="stSidebar"] {
+    transition: all 0.3s ease;
+}
+
+[data-testid="stSidebarContent"] {
+    padding: var(--spacing-md);
+}
+
+/* Expanders responsivos */
+.streamlit-expander {
+    border-radius: 8px;
+    margin-bottom: var(--spacing-md);
+    transition: all 0.3s ease;
+}
+
+.streamlit-expander .streamlit-expanderHeader {
+    border-radius: 8px 8px 0 0;
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-weight: 600;
+}
+
+.streamlit-expander .streamlit-expanderContent {
+    padding: var(--spacing-md);
+}
+
+/* Métricas responsivas */
+.stMetric {
+    border-radius: 8px;
+    padding: var(--spacing-md);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.stMetric:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Scroll personalizado */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--gray-primary);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--gray-accent);
+    border-radius: 4px;
+    transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--gray-accent-dark);
+}
+
+/* Responsive Design Mejorado */
+
+/* Tablets */
+@media (max-width: 768px) {
+    .main .block-container {
+        padding: var(--spacing-md);
+    }
+    
+.stChatMessage[data-testid="user"] .stChatMessage__content,
+.stChatMessage[data-testid="assistant"] .stChatMessage__content {
+        max-width: 85%;
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+    
+    [data-testid="stSidebarContent"] {
+        padding: var(--spacing-sm);
+    }
+    
+    [data-testid="stSidebarContent"] .stButton button {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: 12px;
+    }
+    
+    .streamlit-expander .streamlit-expanderHeader {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: 14px;
+    }
+    
+    .streamlit-expander .streamlit-expanderContent {
+        padding: var(--spacing-sm);
+    }
+    
+    .stMetric {
+        padding: var(--spacing-sm);
+        font-size: 14px;
+    }
+}
+
+/* Móviles */
+@media (max-width: 480px) {
+    .main .block-container {
+        padding: var(--spacing-sm);
+    }
+    
+    .stChatMessage[data-testid="user"] .stChatMessage__content,
+    .stChatMessage[data-testid="assistant"] .stChatMessage__content {
+        max-width: 95%;
+        padding: 8px 12px;
+        font-size: 13px;
+        border-radius: 12px;
+    }
+    
+    [data-testid="stSidebarContent"] {
+        padding: var(--spacing-xs);
+    }
+    
+    [data-testid="stSidebarContent"] .stButton button {
+        padding: var(--spacing-xs) var(--spacing-xs);
+        font-size: 11px;
+        min-height: 32px;
+    }
+    
+    .streamlit-expander .streamlit-expanderHeader {
+        padding: var(--spacing-xs);
+        font-size: 12px;
+    }
+    
+    .streamlit-expander .streamlit-expanderContent {
+        padding: var(--spacing-xs);
+        font-size: 12px;
+    }
+    
+    .stMetric {
+        padding: var(--spacing-xs);
+        font-size: 12px;
+    }
+    
+    /* Ajustes específicos para móviles */
+    .stTextInput > div > div > input,
+    .stChatInput > div > div > div > textarea {
+        padding: var(--spacing-xs);
+        font-size: 14px;
+    }
+    
+    /* Mejorar usabilidad en móviles */
+    .stButton > button {
+        min-height: 44px;
+        min-width: 44px;
+    }
+}
+
+/* Pantallas muy pequeñas */
+@media (max-width: 320px) {
+    .stChatMessage[data-testid="user"] .stChatMessage__content,
+    .stChatMessage[data-testid="assistant"] .stChatMessage__content {
+        max-width: 98%;
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+    
+    [data-testid="stSidebarContent"] .stButton button {
+        font-size: 10px;
+        padding: 2px 4px;
+    }
+}
+
+/* Pantallas grandes */
+@media (min-width: 1200px) {
+    .main .block-container {
+        padding: var(--spacing-xl) var(--spacing-xl) * 2;
+    }
+    
+    .stChatMessage[data-testid="user"] .stChatMessage__content,
+    .stChatMessage[data-testid="assistant"] .stChatMessage__content {
+        max-width: 50%;
+        padding: 16px 20px;
+        font-size: 16px;
+    }
+}
+
+/* Mejoras de accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+    .stChatMessage__content > div,
+    .stButton > button,
+    .stMetric {
+        animation: none;
+        transition: none;
+    }
+}
+
+/* Modo de alto contraste */
+@media (prefers-contrast: high) {
+    .stChatMessage[data-testid="user"] .stChatMessage__content,
+    .stChatMessage[data-testid="assistant"] .stChatMessage__content {
+        border-width: 2px;
+    }
+    
+    .stButton > button {
+        border-width: 2px;
+    }
+}
+
+/* Mejoras de rendimiento */
+.stChatMessage__content,
+.stButton > button,
+.stMetric {
+    will-change: transform;
+}
+
+/* Optimizaciones para dispositivos táctiles */
+@media (hover: none) and (pointer: coarse) {
+    .stButton > button:hover {
+        transform: none;
+    }
+    
+    .stButton > button:active {
+        transform: scale(0.98);
+    }
+}
+
+/* U-TUTOR v3.0 - Estilos para popup de configuración modal */
+.config-popup-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background-color: rgba(0, 0, 0, 0.7) !important;
+    z-index: 9999 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    backdrop-filter: blur(8px) !important;
+    animation: fadeIn 0.3s ease-out !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.config-popup-modal {
+    background: var(--background-color) !important;
+    border-radius: 20px !important;
+    padding: 30px !important;
+    max-width: 800px !important;
+    width: 90% !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5) !important;
+    border: 2px solid var(--accent-color) !important;
+    animation: slideIn 0.3s ease-out !important;
+    position: relative !important;
+    margin: 0 !important;
+}
+
+.config-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.config-popup-title {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 1.8rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, var(--accent-color), var(--accent-color-dark));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.config-popup-close {
+    background: var(--accent-color) !important;
+    border: none !important;
+    font-size: 24px !important;
+    cursor: pointer !important;
+    color: white !important;
+    padding: 10px !important;
+    border-radius: 50% !important;
+    transition: all 0.2s ease !important;
+    width: 45px !important;
+    height: 45px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: bold !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+.config-popup-close:hover {
+    background-color: var(--accent-color-dark) !important;
+    color: white !important;
+    transform: scale(1.1) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+.config-popup-tabs {
+    margin-bottom: 20px;
+}
+
+.config-popup-tab-content {
+    padding: 20px 0;
+}
+
+.config-popup-section {
+    margin-bottom: 25px;
+    padding: 20px;
+    background: var(--secondary-color);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.config-popup-section h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: var(--text-color);
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.config-popup-metric {
+    background: var(--primary-color);
+    padding: 15px;
+    border-radius: 10px;
+    margin: 10px 0;
+    border-left: 4px solid var(--accent-color);
+}
+
+.config-popup-shortcut {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    margin: 8px 0;
+    background: var(--secondary-color);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+}
+
+.config-popup-shortcut:hover {
+    background: var(--accent-color);
+    color: white;
+    transform: translateX(5px);
+}
+
+.config-popup-shortcut-code {
+    background: var(--primary-color);
+    color: var(--accent-color);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    margin-right: 15px;
+    min-width: 120px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+
+.config-popup-shortcut-desc {
+    flex: 1;
+    font-weight: 500;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes slideInScale {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Ocultar botón invisible de Streamlit */
+button[data-testid="close-config-modal"] {
+    display: none !important;
+}
+
+/* Estilos para menú de acción desplegable - U-TUTOR v3.0 */
+.conversation-action-menu {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 8px;
+    margin: 8px 0;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    animation: slideInScale 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.conversation-action-menu::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(52, 152, 219, 0.3), transparent);
+}
+
+.conversation-action-menu button {
+    background: transparent !important;
+    color: #2c3e50 !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 12px 16px !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    margin: 2px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+}
+
+.conversation-action-menu button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(52, 152, 219, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.conversation-action-menu button:hover {
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.1) 0%, rgba(41, 128, 185, 0.1) 100%) !important;
+    color: #1f618d !important;
+    transform: translateY(-1px) scale(1.02) !important;
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2) !important;
+}
+
+.conversation-action-menu button:hover::before {
+    left: 100%;
+}
+
+.conversation-action-menu button:active {
+    transform: translateY(0) scale(0.98) !important;
+    box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3) !important;
+}
+
+/* Estilos específicos para cada tipo de botón */
+.conversation-action-menu button[data-testid*="export"] {
+    color: #27ae60 !important;
+}
+
+.conversation-action-menu button[data-testid*="export"]:hover {
+    background: linear-gradient(135deg, rgba(39, 174, 96, 0.1) 0%, rgba(46, 204, 113, 0.1) 100%) !important;
+    color: #1e8449 !important;
+    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.2) !important;
+}
+
+.conversation-action-menu button[data-testid*="edit"] {
+    color: #f39c12 !important;
+}
+
+.conversation-action-menu button[data-testid*="edit"]:hover {
+    background: linear-gradient(135deg, rgba(243, 156, 18, 0.1) 0%, rgba(230, 126, 34, 0.1) 100%) !important;
+    color: #d68910 !important;
+    box-shadow: 0 4px 12px rgba(243, 156, 18, 0.2) !important;
+}
+
+.conversation-action-menu button[data-testid*="delete"] {
+    color: #e74c3c !important;
+}
+
+.conversation-action-menu button[data-testid*="delete"]:hover {
+    background: linear-gradient(135deg, rgba(231, 76, 60, 0.1) 0%, rgba(192, 57, 43, 0.1) 100%) !important;
+    color: #c0392b !important;
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.2) !important;
+}
+
+.conversation-action-menu button[data-testid*="close"] {
+    color: #95a5a6 !important;
+    font-size: 0.8rem !important;
+    padding: 8px 12px !important;
+}
+
+.conversation-action-menu button[data-testid*="close"]:hover {
+    background: linear-gradient(135deg, rgba(149, 165, 166, 0.1) 0%, rgba(127, 140, 141, 0.1) 100%) !important;
+    color: #7f8c8d !important;
+    box-shadow: 0 4px 12px rgba(149, 165, 166, 0.2) !important;
+}
+
+/* Botón de tres puntos moderno - U-TUTOR v3.0 */
+button[data-testid*="menu_"] {
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: #7f8c8d !important;
+    border: 1px solid rgba(127, 140, 141, 0.2) !important;
+    border-radius: 8px !important;
+    width: 36px !important;
+    height: 36px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.3rem !important;
+    font-weight: 600 !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    backdrop-filter: blur(10px) !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+/* Estilos para lista desplegable de acciones - U-TUTOR v3.0 */
+div[data-testid*="action_select_"] {
+    margin: 8px 0 !important;
+}
+
+div[data-testid*="action_select_"] select {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(52, 152, 219, 0.3) !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    font-size: 0.9rem !important;
+    color: #2c3e50 !important;
+    transition: all 0.3s ease !important;
+}
+
+div[data-testid*="action_select_"] select:hover {
+    border-color: rgba(52, 152, 219, 0.5) !important;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2) !important;
+}
+
+div[data-testid*="action_select_"] select:focus {
+    border-color: #3498db !important;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2) !important;
+    outline: none !important;
+}
+
+button[data-testid*="menu_"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(52, 152, 219, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+button[data-testid*="menu_"]:hover {
+    background: rgba(52, 152, 219, 0.1) !important;
+    color: #3498db !important;
+    border-color: rgba(52, 152, 219, 0.3) !important;
+    transform: translateY(-2px) scale(1.05) !important;
+    box-shadow: 0 6px 20px rgba(52, 152, 219, 0.2) !important;
+}
+
+button[data-testid*="menu_"]:hover::before {
+    left: 100%;
+}
+
+button[data-testid*="menu_"]:active {
+    transform: translateY(0) scale(0.95) !important;
+    box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3) !important;
+}
+
+/* Responsive para popup */
+@media (max-width: 768px) {
+    .config-popup-modal {
+        width: 95%;
+        padding: 20px;
+        max-height: 90vh;
+    }
+    
+    .config-popup-title {
+        font-size: 1.5rem;
+    }
+    
+    .config-popup-section {
+        padding: 15px;
+    }
+    
+    .config-popup-shortcut {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .config-popup-shortcut-code {
+        margin-right: 0;
+        margin-bottom: 8px;
+        min-width: auto;
+    }
+    
+    .conversation-action-menu {
+        padding: 6px;
+        margin: 6px 0;
+    }
+    
+    .conversation-action-menu button {
+        padding: 10px 14px !important;
+        font-size: 0.85rem !important;
+    }
+    
+    button[data-testid*="menu_"] {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 1.1rem !important;
+    }
+    
+    /* Estilos simplificados para móvil */
+    .conversation-action-menu button {
+        padding: 8px 12px !important;
+        font-size: 0.9rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .config-popup-modal {
+        width: 98%;
+        padding: 15px;
+    }
+}
