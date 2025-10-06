@@ -1,15 +1,18 @@
 # U-TUTOR v3.0 - Mejoras en ui_components.py: Sidebar avanzado, configuración y controles de audio
 import streamlit as st
 import time
+import os
 from typing import List, Tuple, Optional
 from database_manager import DatabaseManager
-
+from TTSManager import TTSManager
 
 class UIComponents:
     def __init__(self, db_manager: DatabaseManager, version: str):
         """Inicializa UIComponents con estados de sesión - U-TUTOR v3.0"""
         self.db_manager = db_manager
         self.version = version
+        tts_engine = os.getenv("TTS_ENGINE", "edge-tts")
+        self.tts_manager = TTSManager(engine_type=tts_engine)
    
         # Inicializar estados de sesión necesarios
         if 'theme' not in st.session_state:
@@ -20,6 +23,13 @@ class UIComponents:
             
         if 'show_config_page' not in st.session_state:
             st.session_state.show_config_page = False
+        
+        # Configuraciones fijas (sin opciones de inglés)
+        if 'tts_language' not in st.session_state:
+            st.session_state.tts_language = 'es'
+        
+        if 'auto_translate' not in st.session_state:
+            st.session_state.auto_translate = False
 
     def render_sidebar(self) -> Optional[int]:
         """Renderiza el sidebar responsivo con gestión de conversaciones - U-TUTOR v3.0"""
@@ -255,16 +265,9 @@ class UIComponents:
             index=["Profesional", "Amigable", "Conciso", "Detallado"].index(st.session_state.personality)
         )
         
-        # Idioma para TTS
-        if 'tts_language' not in st.session_state:
-            st.session_state.tts_language = 'es'
-        
-        tts_lang = st.selectbox(
-            "🗣️ Idioma de voz",
-            [("Español", "es"), ("Inglés", "en")],
-            format_func=lambda x: x[0],
-            index=0 if st.session_state.tts_language == 'es' else 1
-        )
+        # Idioma fijo en español
+        st.markdown("### 🗣️ Idioma de voz")
+        st.info("🇪🇸 **Español** (fijo para mejor compatibilidad)")
         
         # Mostrar información sobre voces TTS disponibles
         if hasattr(st.session_state, 'audio_manager'):
@@ -277,16 +280,6 @@ class UIComponents:
             else:
                 st.info("ℹ️ Solo gTTS disponible (requiere internet)")
         
-        # Opción de traducción automática
-        if 'auto_translate' not in st.session_state:
-            st.session_state.auto_translate = True
-        
-        auto_translate = st.checkbox(
-            "🌐 Traducción automática",
-            value=st.session_state.auto_translate,
-            help="Traduce automáticamente las respuestas al inglés cuando el idioma de voz está en inglés"
-        )
-        
         # Tema fijo (solo oscuro)
         st.markdown("### 🌙 Apariencia")
         st.info("🎨 **Tema**: Oscuro (fijo para mejor compatibilidad)")
@@ -297,8 +290,8 @@ class UIComponents:
             if st.button("💾 Aplicar Cambios", use_container_width=True, type="primary"):
                 st.session_state.temperature = temperature
                 st.session_state.personality = personality
-                st.session_state.tts_language = tts_lang[1]
-                st.session_state.auto_translate = auto_translate
+                st.session_state.tts_language = 'es'  # Fijo en español
+                st.session_state.auto_translate = False  # Deshabilitado
                 st.session_state.settings_changed = True
                 st.success("✅ Configuración guardada")
                 st.rerun()
@@ -307,8 +300,8 @@ class UIComponents:
             if st.button("🔄 Resetear", use_container_width=True):
                 st.session_state.temperature = 0.7
                 st.session_state.personality = "Amigable"
-                st.session_state.tts_language = 'es'
-                st.session_state.auto_translate = True
+                st.session_state.tts_language = 'es'  # Fijo en español
+                st.session_state.auto_translate = False  # Deshabilitado
                 st.info("↩️ Valores por defecto")
                 st.rerun()
         
@@ -450,19 +443,60 @@ class UIComponents:
                     st.session_state.play_audio = message_content
 
     def render_chat_messages(self, messages: List[dict]):
-        """Renderiza los mensajes del chat con controles de audio - U-TUTOR v3.0"""
+        """Renderiza los mensajes del chat con TTS"""
         # No mostrar mensajes si estamos en la página de configuración
         if st.session_state.show_config_page:
             return
             
         for idx, message in enumerate(messages):
             with st.chat_message(message["role"]):
+                # Mostrar el contenido del mensaje
                 st.markdown(message["content"])
                 
-                # Agregar botón de audio para mensajes del asistente
+                # NUEVO: Agregar botón TTS solo para mensajes del asistente
                 if message["role"] == "assistant":
-                    if st.button("🔊 Escuchar", key=f"audio_{idx}", help="Reproducir mensaje"):
-                        st.session_state.current_audio = message["content"]
+                    self._add_tts_button(message["content"], idx)
+    
+    def _add_tts_button(self, text: str, message_index: int):
+        """Agrega un botón para reproducir el mensaje con TTS"""
+        # Crear identificador único que incluya la conversación actual
+        conv_id = st.session_state.get('current_conversation_id', 'new')
+        unique_key = f"{conv_id}_{message_index}"
+        
+        # Usar columnas para alinear los botones horizontalmente
+        col1, col2 = st.columns([1, 9])
+        
+        with col1:
+            # Inicializar estado de audio si no existe
+            if f'audio_playing_{unique_key}' not in st.session_state:
+                st.session_state[f'audio_playing_{unique_key}'] = False
+            if f'audio_data_{unique_key}' not in st.session_state:
+                st.session_state[f'audio_data_{unique_key}'] = None
+            
+            # Botón de reproducir/pausar
+            if st.session_state[f'audio_playing_{unique_key}']:
+                if st.button("⏸️", key=f"pause_{unique_key}", help="Pausar audio", use_container_width=True):
+                    st.session_state[f'audio_playing_{unique_key}'] = False
+                    st.rerun()
+            else:
+                if st.button("▶️", key=f"play_{unique_key}", help="Reproducir audio", use_container_width=True):
+                    # Mostrar indicador de carga
+                    with st.spinner(""):
+                        # Preprocesar texto para TTS
+                        processed_text = self.tts_manager.preprocess_text_for_tts(text)
+                        # Generar audio
+                        audio_data = self.tts_manager.text_to_speech_fast(processed_text)
+                        if audio_data:
+                            # Guardar audio en session state
+                            st.session_state[f'audio_data_{unique_key}'] = audio_data
+                            st.session_state[f'audio_playing_{unique_key}'] = True
+                            st.rerun()
+                        else:
+                            st.error("❌ Error al generar audio")
+        
+        # Mostrar reproductor de audio si está disponible
+        if st.session_state[f'audio_data_{unique_key}']:
+            st.audio(st.session_state[f'audio_data_{unique_key}'], format='audio/mp3')
     
     def _load_conversation(self, conv_id: int):
         """Carga una conversación específica - U-TUTOR v3.0"""
@@ -580,3 +614,4 @@ class UIComponents:
             # Cerrar menú en caso de error
             if hasattr(st.session_state, 'active_menu'):
                 del st.session_state.active_menu
+                
