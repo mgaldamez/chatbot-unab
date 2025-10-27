@@ -128,7 +128,7 @@ def generate_conversation_title(first_message):
     return first_message
 
 # Configuración de la aplicación
-st.set_page_config(page_title="U-Tutor v2", page_icon="🎓", layout="wide")
+st.set_page_config(page_title="U-Tutor v2", page_icon=None, layout="wide")
 
 # Inicializar base de datos
 init_database()
@@ -143,10 +143,10 @@ if not openai_api_key:
 llm = ChatOpenAI(model="gpt-5", temperature=0, api_key=openai_api_key)
 
 # Sidebar para gestión de conversaciones
-st.sidebar.title("🗂️ Historial de Chats")
+st.sidebar.title("Historial de Chats")
 
 # Botón para nueva conversación
-if st.sidebar.button("➕ Nueva Conversación", use_container_width=True):
+if st.sidebar.button("Nueva Conversación", use_container_width=True):
     st.session_state.current_conversation_id = None
     st.session_state.messages = []
     st.rerun()
@@ -162,7 +162,7 @@ if conversations:
         
         with col1:
             if st.button(
-                f"💬 {title}", 
+                f"{title}", 
                 key=f"conv_{conv_id}",
                 use_container_width=True,
                 help=f"Creado: {created_at[:16]}"
@@ -176,7 +176,7 @@ if conversations:
                 st.rerun()
         
         with col2:
-            if st.button("🗑️", key=f"del_{conv_id}", help="Eliminar conversación"):
+            if st.button("Eliminar", key=f"del_{conv_id}", help="Eliminar conversación"):
                 delete_conversation(conv_id)
                 if hasattr(st.session_state, 'current_conversation_id') and st.session_state.current_conversation_id == conv_id:
                     st.session_state.current_conversation_id = None
@@ -184,7 +184,7 @@ if conversations:
                 st.rerun()
 
 # Área principal
-st.title("🎓 U-Tutor v2 - Tu asistente universitario")
+st.title("U-Tutor v2 - Tu asistente universitario")
 
 # Mensaje de sistema (contexto para la IA)
 system_message = """Eres Jake, un tutor universitario empático y profesional. 
@@ -199,28 +199,15 @@ if "current_conversation_id" not in st.session_state:
 
 # Mostrar información de la conversación actual
 if st.session_state.current_conversation_id:
-    st.info(f"📝 Conversación #{st.session_state.current_conversation_id}")
+    st.info(f"Conversación #{st.session_state.current_conversation_id}")
 else:
-    st.info("💭 Nueva conversación - Escribe tu primer mensaje para comenzar")
+    st.info("Nueva conversación - Escribe tu primer mensaje para comenzar")
 
-# Mostrar historial de chat
+# Mostrar historial de chat (alineado a la derecha para ambos roles)
 for message in st.session_state.messages:
-    if message["role"] == "user":
-        # Pregunta del usuario - lado izquierdo
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            with st.chat_message("user"):
-                st.markdown(message["content"])
-        with col2:
-            st.empty()  # Columna vacía para el lado derecho
-    else:
-        # Respuesta del asistente - lado derecho
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            st.empty()  # Columna vacía para el lado izquierdo
-        with col2:
-            with st.chat_message("assistant"):
-                st.markdown(message["content"])
+    role = message.get("role", "user")
+    with st.chat_message(role):
+        st.markdown(message["content"])
 
 # Input del chat
 if prompt := st.chat_input("Escribe tu mensaje..."):
@@ -229,12 +216,8 @@ if prompt := st.chat_input("Escribe tu mensaje..."):
         conversation_title = generate_conversation_title(prompt)
         st.session_state.current_conversation_id = create_new_conversation(conversation_title)
     
-    # Mostrar mensaje del usuario - lado izquierdo
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        st.chat_message("user").markdown(prompt)
-    with col2:
-        st.empty()
+    # Mostrar mensaje del usuario
+    st.chat_message("user").markdown(prompt)
     
     # Agregar mensaje del usuario al historial de la sesión
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -248,37 +231,33 @@ if prompt := st.chat_input("Escribe tu mensaje..."):
         role = "human" if msg["role"] == "user" else "assistant"
         api_messages.append((role, msg["content"]))
     
-    # Obtener respuesta de Jake - lado derecho
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        st.empty()
-    with col2:
-        with st.chat_message("assistant"):
-            with st.spinner("Jake está pensando..."):
-                try:
-                    response = llm.invoke(api_messages).content
-                    st.markdown(response)
-                
-                    # Agregar respuesta del asistente al historial de la sesión
-                    st.session_state.messages.append({"role": "assistant", "content": response})
+    # Obtener respuesta de Jake
+    with st.chat_message("assistant"):
+        with st.spinner("Jake está pensando..."):
+            try:
+                response = llm.invoke(api_messages).content
+                st.markdown(response)
 
-                    # Guardar respuesta del asistente en la base de datos
-                    save_message(st.session_state.current_conversation_id, "assistant", response)
+                # Agregar respuesta del asistente al historial de la sesión
+                st.session_state.messages.append({"role": "assistant", "content": response})
 
-                except Exception as e:
-                    st.error(f"Error al obtener respuesta: {str(e)}")
+                # Guardar respuesta del asistente en la base de datos
+                save_message(st.session_state.current_conversation_id, "assistant", response)
+
+            except Exception as e:
+                st.error(f"Error al obtener respuesta: {str(e)}")
 
 # Información adicional en el sidebar
 st.sidebar.markdown("---")
-st.sidebar.markdown("### ℹ️ Información")
+st.sidebar.markdown("### Información")
 st.sidebar.markdown("""
 - **Modelo**: GPT-5
 - **Versión**: U-Tutor v2
 - **Funciones**: 
-  - ✅ Historial persistente
-  - ✅ Múltiples conversaciones
-  - ✅ Eliminar conversaciones
-  - ✅ Continuar chats anteriores
+    - Historial persistente
+    - Múltiples conversaciones
+    - Eliminar conversaciones
+    - Continuar chats anteriores
 """)
 
 # Mostrar estadísticas

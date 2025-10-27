@@ -1,4 +1,4 @@
-# U-TUTOR v3.0 - Nuevo módulo audio_manager.py para funcionalidades de audio
+# U-TUTOR v5.0 - Nuevo módulo audio_manager.py para funcionalidades de audio
 import os
 import tempfile
 from gtts import gTTS
@@ -14,7 +14,7 @@ except ImportError:
     PYTTSX3_AVAILABLE = False
 
 class AudioManager:
-    """Gestor de funcionalidades de audio para U-TUTOR v3.0"""
+    """Gestor de funcionalidades de audio para U-TUTOR v5.0"""
     
     def __init__(self):
         """Inicializa el gestor de audio"""
@@ -49,19 +49,13 @@ class AudioManager:
                 self.local_tts.setProperty('rate', 180)  # Velocidad de habla
                 self.local_tts.setProperty('volume', 0.9)  # Volumen
                 
-                # Mostrar voces disponibles
-                if self.available_voices:
-                    st.info(f"🎤 Voces TTS locales disponibles: {list(self.available_voices.keys())}")
-                else:
-                    st.warning("⚠️ No se encontraron voces TTS locales compatibles")
-                    
             except Exception as e:
                 st.warning(f"⚠️ TTS local no disponible: {str(e)}")
                 self.local_tts = None
     
     def text_to_speech(self, text: str, lang: str = 'es') -> Optional[str]:
         """
-        Convierte texto a voz usando TTS local (más rápido) o gTTS como respaldo - U-TUTOR v3.0
+        Convierte texto a voz usando TTS local (más rápido) o gTTS como respaldo - U-TUTOR v5.0
         
         Args:
             text: Texto a convertir (texto completo)
@@ -140,7 +134,7 @@ class AudioManager:
     
     def speech_to_text(self, audio_data) -> Tuple[bool, str]:
         """
-        Convierte voz a texto usando el micrófono - U-TUTOR v3.0
+        Convierte voz a texto usando el micrófono - U-TUTOR v5.0
         
         Returns:
             Tupla (éxito, texto/mensaje_error)
@@ -161,7 +155,7 @@ class AudioManager:
     
     def record_audio(self, duration: int = 5) -> Optional[sr.AudioData]:
         """
-        Graba audio del micrófono - U-TUTOR v3.0
+        Graba audio del micrófono - U-TUTOR v5.0
         
         Args:
             duration: Duración máxima de grabación en segundos
@@ -205,7 +199,7 @@ class AudioManager:
             return None
     
     def cleanup_audio_files(self):
-        """Limpia archivos de audio temporales - U-TUTOR v3.0"""
+        """Limpia archivos de audio temporales - U-TUTOR v5.0"""
         try:
             for file in os.listdir(self.temp_dir):
                 if file.startswith("ututor_") and (file.endswith(".mp3") or file.endswith(".wav")):
@@ -214,16 +208,16 @@ class AudioManager:
             pass  # Silenciar errores de limpieza
     
     def clear_audio_cache(self):
-        """Limpia el caché de audio para liberar memoria - U-TUTOR v3.0"""
+        """Limpia el caché de audio para liberar memoria - U-TUTOR v5.0"""
         self.audio_cache.clear()
         st.info("🧹 Caché de audio limpiado")
     
     def get_cache_size(self):
-        """Retorna el tamaño del caché de audio - U-TUTOR v3.0"""
+        """Retorna el tamaño del caché de audio - U-TUTOR v5.0"""
         return len(self.audio_cache)
     
     def get_available_voices_info(self):
-        """Retorna información sobre las voces TTS disponibles - U-TUTOR v3.0"""
+        """Retorna información sobre las voces TTS disponibles - U-TUTOR v5.0"""
         return {
             'local_tts_available': self.local_tts is not None,
             'available_languages': list(self.available_voices.keys()),

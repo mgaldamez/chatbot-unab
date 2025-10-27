@@ -10,17 +10,33 @@ import pygame
 from gtts import gTTS
 import edge_tts
 import io
+import contextlib
+import sys
+
+@contextlib.contextmanager
+def suppress_stdout():
+    """Context manager para silenciar stdout temporalmente"""
+    with open(os.devnull, "w") as devnull:
+        old_stdout = sys.stdout
+        sys.stdout = devnull
+        try:
+            yield
+        finally:
+            sys.stdout = old_stdout
+
 
 class TTSManager:
     """Gestor optimizado de Text-to-Speech con múltiples motores y caché"""
     
     def __init__(self, engine_type: str = "pyttsx3"):
+        
         """
         Inicializa el gestor TTS
         
         Args:
             engine_type: Tipo de motor TTS ('pyttsx3', 'gtts', 'edge-tts')
         """
+        
         self.engine_type = engine_type
         self.cache = {}  # Caché en memoria para respuestas comunes
         self.audio_queue = Queue()
@@ -38,32 +54,34 @@ class TTSManager:
     def _init_pyttsx3(self):
         """Inicializa y optimiza pyttsx3"""
         try:
-            self.engine = pyttsx3.init()
+            with suppress_stdout():  # 🔹 Evita prints de pyttsx3
+                self.engine = pyttsx3.init()
             
             # Optimizaciones para velocidad
-            self.engine.setProperty('rate', 180)  # Velocidad de habla
+            self.engine.setProperty('rate', 180)
             self.engine.setProperty('volume', 0.9)
-            
-            # Seleccionar voz en español si está disponible
+
+            # Seleccionar voz en español
             voices = self.engine.getProperty('voices')
             spanish_voice = None
-            
             for voice in voices:
                 if 'spanish' in voice.name.lower() or 'es' in voice.id.lower():
                     spanish_voice = voice
                     break
-            
             if spanish_voice:
                 self.engine.setProperty('voice', spanish_voice.id)
+
         except Exception as e:
             st.error(f"Error al inicializar pyttsx3: {e}")
             self.engine = None
+
     
     def _init_edge_tts(self):
-        """Inicializa Edge TTS (más rápido y mejor calidad)"""
-        # Edge TTS es asíncrono, no requiere inicialización especial
+        """Inicializa Edge TTS (más rápido y mejor calidad) sin imprimir mensajes de info"""
+        with suppress_stdout():  # 🔹 Aquí silenciamos stdout temporalmente
+            import edge_tts  # cualquier print de la librería se silencia
         self.voice = "es-ES-AlvaroNeural"  # Voz masculina española
-        # Alternativas: "es-ES-ElviraNeural" (femenina)
+        # Alternativa femenina: "es-ES-ElviraNeural"
     
     async def _generate_edge_tts_async(self, text: str) -> bytes:
         """Genera audio con Edge TTS de forma asíncrona"""
@@ -230,23 +248,6 @@ class StreamlitTTSIntegration:
         """
         col1, col2 = st.columns([10, 1])
         
-        with col2:
-            if st.button("🔊", key=f"tts_{key}", help="Escuchar mensaje"):
-                with st.spinner("Generando audio..."):
-                    # Preprocesar texto
-                    processed_text = self.tts.preprocess_text_for_tts(text)
-                    
-                    # Generar audio
-                    audio_data = self.tts.text_to_speech_fast(processed_text)
-                    
-                    if audio_data:
-                        # Opción 1: Reproducir directamente
-                        self.tts.play_audio(audio_data)
-                        
-                        # Opción 2: Mostrar reproductor de audio en Streamlit
-                        st.audio(audio_data, format='audio/mp3')
-                    else:
-                        st.error("No se pudo generar el audio")
     
     def render_message_with_tts(self, message: dict, index: int):
         """
@@ -266,19 +267,6 @@ class StreamlitTTSIntegration:
                 with col1:
                     st.markdown(message["content"])
                 
-                with col2:
-                    # Solo mostrar TTS para mensajes del asistente
-                    if message["role"] == "assistant":
-                        if st.button("🔊", key=f"tts_{index}", 
-                                   help="Escuchar respuesta"):
-                            with st.spinner("🎵"):
-                                processed = self.tts.preprocess_text_for_tts(
-                                    message["content"]
-                                )
-                                audio = self.tts.text_to_speech_fast(processed)
-                                if audio:
-                                    st.audio(audio, format='audio/mp3')
-
 
 # Ejemplo de integración con tu chat_manager.py
 def integrate_tts_with_chat(chat_manager_instance):
