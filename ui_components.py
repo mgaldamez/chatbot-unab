@@ -383,6 +383,7 @@ class UIComponents:
         else:
             AVAILABLE_MODELS = default_models
 
+        
         selected_model = st.sidebar.selectbox(
             "🤖 Modelo de IA",
             AVAILABLE_MODELS,
@@ -429,7 +430,7 @@ class UIComponents:
         st.sidebar.markdown(
     """
     <div style="text-align:center;">
-        <h2>U - TUTOR<br>
+        <h2>🎓 <br>U - TUTOR<br>
         Tu Asistente Academico</h2>
     </div>
     """,
@@ -437,13 +438,9 @@ class UIComponents:
 )
 
         # Línea divisoria
-        st.sidebar.markdown("<div class='sidebar-separator'>__________________________</div>", unsafe_allow_html=True)
+        st.sidebar.markdown("<div class='sidebar-separator'>_______________________________________</div>", unsafe_allow_html=True)
         st.sidebar.markdown("")
 
-        # Indicador de estado de conexión
-        st.sidebar.markdown(" ")
-        st.sidebar.success("API Conectada")
-        st.sidebar.markdown(" ")
 
         # Botones generales
         st.sidebar.markdown("## 🔧 Configuraciones")
@@ -454,10 +451,9 @@ class UIComponents:
 
         self.render_model_selector()
         
-        st.sidebar.markdown("<div class='sidebar-separator'>__________________________</div>", unsafe_allow_html=True)
+        st.sidebar.markdown("<div class='sidebar-separator'>_______________________________________</div>", unsafe_allow_html=True)
         st.sidebar.markdown("" \
         "")
-        st.sidebar.markdown("ㅤ")
         st.sidebar.markdown("## 📁 Chats")
         if st.sidebar.button("➕&nbsp;&nbsp;Nueva conversación", key="new_conv_button"):
             st.session_state.current_conversation_id = None
