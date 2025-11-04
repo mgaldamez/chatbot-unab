@@ -383,11 +383,14 @@ class UIComponents:
         else:
             AVAILABLE_MODELS = default_models
 
-        
+        # FIX: Verificar si se está generando para deshabilitar selector
+        is_generating = st.session_state.get('await_response', False)
+
         selected_model = st.sidebar.selectbox(
             "🤖 Modelo de IA",
             AVAILABLE_MODELS,
-            key="selected_model"
+            key="selected_model",
+            disabled=is_generating  # 🔴 BLOQUEAR DURANTE GENERACIÓN
         )
 
         if "chat_manager" in st.session_state:
@@ -463,32 +466,39 @@ class UIComponents:
         self._apply_theme()
         # CSS del sidebar ahora está en styles_modern.css
 
-        # FIX: Detectar si estamos generando respuesta para deshabilitar interacciones
-        is_generating = st.session_state.get('await_response', False)
-
         # === Sidebar principal ===
         st.sidebar.markdown("<div class='u-tutor-sidebar'>", unsafe_allow_html=True)
         st.sidebar.markdown(
     """
     <div style="text-align:center;">
-        <h2>🎓 <br>U - TUTOR<br>
+        <h2>U - TUTOR<br>
         Tu Asistente Academico</h2>
     </div>
     """,
     unsafe_allow_html=True
 )
 
+        # FIX: Verificar si se está generando respuesta
+        is_generating = st.session_state.get('await_response', False)
+
         # Botones generales
         st.sidebar.markdown("## 🔧 Configuraciones")
 
-        if st.sidebar.button("⚙️ Ajustes", key="config_button"):
+        # FIX: Deshabilitar ajustes mientras se genera
+        if st.sidebar.button("⚙️ Ajustes", key="config_button", disabled=is_generating):
             st.session_state.show_config_page = True
             st.rerun()
 
         self.render_model_selector()
-        
+
         st.sidebar.markdown("## 📁 Chats")
-        if st.sidebar.button("➕&nbsp;&nbsp;Nueva conversación", key="new_conv_button"):
+
+        # FIX: Mostrar advertencia si se intenta hacer algo mientras se genera
+        if is_generating:
+            st.sidebar.warning("⏳ **Generando respuesta...**\nEspera a que termine para cambiar de chat")
+
+        # FIX: Deshabilitar botón de nueva conversación mientras se genera
+        if st.sidebar.button("➕&nbsp;&nbsp;Nueva conversación", key="new_conv_button", disabled=is_generating):
             # Detener generación en progreso
             st.session_state.await_response = False
             st.session_state._generating_response = False
@@ -512,22 +522,25 @@ class UIComponents:
             conversations = self.db_manager.get_conversations()
 
         # Mostrar conversaciones como botones
-        
+
         if conversations:
             for conv_id, title, created_at, updated_at in conversations:
                 col_chat, col_menu = st.sidebar.columns([4, 1], gap="small")
 
                 with col_chat:
+                    # FIX: Deshabilitar botones de conversación mientras se genera
                     if st.button(
                         f"{title[:25]}{'...' if len(title) > 25 else ''}",
                         key=f"sidebar_chat_{conv_id}",
                         use_container_width=True,
-                        help=f"Creado: {created_at[:16]}"
+                        help=f"Creado: {created_at[:16]}" if not is_generating else "Espera a que termine la generación",
+                        disabled=is_generating  # 🔴 BLOQUEAR DURANTE GENERACIÓN
                     ):
                         self._load_conversation(conv_id)
 
                 with col_menu:
-                    if st.button("⋮", key=f"menu_btn_{conv_id}", help="Opciones"):
+                    # FIX: Deshabilitar menú de opciones mientras se genera
+                    if st.button("⋮", key=f"menu_btn_{conv_id}", help="Opciones" if not is_generating else "Espera a que termine", disabled=is_generating):
                         if st.session_state.get("active_menu") == conv_id:
                             st.session_state["active_menu"] = None
                         else:
@@ -880,6 +893,29 @@ class UIComponents:
             }
             </style>
             """, unsafe_allow_html=True)
+
+        # FIX: Mostrar indicador visual si se está generando respuesta
+        is_generating = st.session_state.get('await_response', False)
+        if is_generating:
+            st.markdown("""
+            <div style="
+                background: linear-gradient(90deg, rgba(160, 196, 255, 0.2) 0%, rgba(41, 128, 185, 0.2) 100%);
+                border-left: 4px solid #a0c4ff;
+                border-radius: 8px;
+                padding: 12px 16px;
+                margin-bottom: 16px;
+                animation: pulse 1.5s infinite;
+            ">
+                <span style="color: #a0c4ff; font-weight: bold;">⏳ Generando respuesta...</span>
+            </div>
+            <style>
+            @keyframes pulse {
+                0%, 100% { opacity: 0.8; }
+                50% { opacity: 1; }
+            }
+            </style>
+            """, unsafe_allow_html=True)
+
         # Título principal
         st.title(f"🎓 U-Tutor v{self.version}")
         
@@ -940,21 +976,22 @@ class UIComponents:
         # Aplicar tema
         self._apply_theme()
 
-        # PLAN PASO 2: Mostrar alerta si generación fue cancelada
+        # Mostrar alerta si generación fue cancelada
         if st.session_state.get('generation_cancelled', False):
-            st.error("❌ **Generación Cancelada** - Cambiaste de chat mientras se generaba la respuesta")
+            st.warning("⚠️ **Generación Interrumpida** - Cambiste de chat mientras se generaba la respuesta")
 
-            # PLAN PASO 3: Botón para reanudar/continuar
-            col1, col2, col3 = st.columns([2, 2, 2])
+            col1, col2 = st.columns([1, 1])
             with col1:
-                if st.button("🔄 Continuar Generación", use_container_width=True, key="continue_generation_btn"):
-                    # Marcar para reanudar
+                if st.button("🔄 Regenerar Respuesta", use_container_width=True, key="continue_generation_btn"):
+                    # Limpiar flags y esperar nueva respuesta
                     st.session_state.generation_cancelled = False
+                    st.session_state._generating_response = False
                     st.session_state.await_response = True
+                    print("🔄 [LOG] Regenerando después de interrupción")
                     st.rerun()
             with col2:
-                if st.button("✅ OK, Entendido", use_container_width=True, key="acknowledge_cancel_btn"):
-                    # Solo cerrar alerta
+                if st.button("✅ Descartar", use_container_width=True, key="acknowledge_cancel_btn"):
+                    # Descartar la generación interrumpida
                     st.session_state.generation_cancelled = False
                     st.rerun()
             st.markdown("---")
@@ -969,8 +1006,12 @@ class UIComponents:
             # Mostrar solo los ultimos 50 mensajes para optimizar rendimiento
             messages_to_display = messages[-50:] if len(messages) > 50 else messages
 
-            # Verificar si el último mensaje completo es del asistente (para habilitar regenerar)
+            # Verificar si el último mensaje es del asistente (para habilitar regenerar)
             last_is_assistant = st.session_state.messages and st.session_state.messages[-1].get("role") == "assistant"
+
+            # FIX: Verificar si estamos esperando respuesta o si fue interrumpida
+            awaiting_response = st.session_state.get('await_response', False)
+            generation_cancelled = st.session_state.get('generation_cancelled', False)
 
             for idx, message in enumerate(messages_to_display):
                 role = message.get("role", "user")
@@ -990,6 +1031,34 @@ class UIComponents:
                     </div>
                     """
                     st.markdown(html, unsafe_allow_html=True)
+
+                    # FIX: Mostrar botón de regenerar junto al último mensaje del usuario si:
+                    # 1. Estamos esperando respuesta (generación en progreso)
+                    # 2. O la generación fue interrumpida
+                    is_last_message = (real_idx == len(st.session_state.messages) - 1)
+                    if is_last_message and (awaiting_response or generation_cancelled):
+                        col_space, col_regen = st.columns([8, 1], gap="small")
+                        with col_regen:
+                            if st.button("🔄", key=f"regen_on_user_{idx}", help="Regenerar respuesta", use_container_width=True):
+                                # FIX: Reenviar el mensaje del usuario para regenerar la respuesta
+                                # 1. Extraer el contenido del mensaje del usuario
+                                user_content = content
+
+                                # 2. Eliminar el mensaje del usuario y la respuesta anterior del asistente
+                                if st.session_state.messages and st.session_state.messages[-1].get("role") == "user":
+                                    st.session_state.messages.pop()
+                                    print(f"🔄 [LOG] Mensaje del usuario removido para reenvío")
+
+                                if st.session_state.messages and st.session_state.messages[-1].get("role") == "assistant":
+                                    st.session_state.messages.pop()
+                                    print(f"🔄 [LOG] Respuesta del asistente removida")
+
+                                # 3. Guardar el mensaje para ser reenviado en el siguiente ciclo
+                                st.session_state.pending_message = user_content
+                                st.session_state.generation_cancelled = False
+                                st.session_state._generating_response = False
+                                print(f"🔄 [LOG] Mensaje del usuario reenviado para regeneración")
+                                st.rerun()
                 else:
                     html = f"""
     <div class='u-tutor-message assistant'>
@@ -1002,8 +1071,7 @@ class UIComponents:
 
                     st.markdown(html, unsafe_allow_html=True)
 
-                    # ✅ Botón para reproducir audio + Regenerar respuesta
-                    # Solo mostrar si este es el ÚLTIMO mensaje del asistente
+                    # Mostrar botón de regenerar solo en el último mensaje del asistente
                     is_last_message = (real_idx == len(st.session_state.messages) - 1)
                     self._add_tts_button(content, idx, show_regenerate=is_last_message and last_is_assistant)
 
@@ -1022,7 +1090,7 @@ class UIComponents:
 
 
     def _add_tts_button(self, text: str, message_index: int, show_regenerate: bool = False):
-        """Renderiza botón de TTS + Regenerar (solo en último mensaje del asistente) - CSS movido a styles_modern.css"""
+        """Renderiza botón de TTS + Regenerar - CSS movido a styles_modern.css"""
         conv_id = st.session_state.get('current_conversation_id', 'new')
         unique_key = f"{conv_id}_{message_index}"
 
@@ -1038,18 +1106,17 @@ class UIComponents:
 
         # Si es el último mensaje del asistente, mostrar dos botones (Audio + Regenerar)
         if show_regenerate:
-            # Proporciones responsivas: más espacio para botones en móvil
             col_audio, col_regen, col_space = st.columns([1.2, 1.5, 10], gap="medium")
 
             # ✅ Botón de Audio
             with col_audio:
                 if st.session_state[f'audio_playing_{unique_key}']:
-                    if st.button("⏸️ ", key=f"pause_{unique_key}", help="Pausar audio", use_container_width=True):
+                    if st.button("⏸️", key=f"pause_{unique_key}", help="Pausar audio", use_container_width=True):
                         st.session_state[f'audio_playing_{unique_key}'] = False
                         st.rerun()
                 else:
-                    if st.button("▶️ ", key=f"play_{unique_key}", help="Reproducir audio", use_container_width=True):
-                        with st.spinner(""):
+                    if st.button("▶️", key=f"play_{unique_key}", help="Reproducir audio", use_container_width=True):
+                        with st.spinner("Generando audio..."):
                             processed_text = self.tts_manager.preprocess_text_for_tts(text)
                             audio_data = self.tts_manager.text_to_speech_fast(processed_text)
                             if audio_data:
@@ -1062,27 +1129,28 @@ class UIComponents:
             # ✅ Botón Regenerar Respuesta
             with col_regen:
                 if st.button("🔄", key=f"regen_{unique_key}", help="Regenerar esta respuesta", use_container_width=True):
-                    print(f"🔄 [LOG] Clickeado botón regenerar. Mensajes antes: {len(st.session_state.messages)}")
-                    # Eliminar el último mensaje del asistente
+                    # FIX: Eliminar el último mensaje del asistente de forma segura
                     if st.session_state.messages and st.session_state.messages[-1].get("role") == "assistant":
-                        st.session_state.messages.pop()
-                        print(f"🗑️ [LOG] Mensaje eliminado. Mensajes ahora: {len(st.session_state.messages)}")
-                    # Marcar para generar nueva respuesta
+                        removed_message = st.session_state.messages.pop()
+                        print(f"🔄 [LOG] Mensaje regenerado removido: {len(removed_message.get('content', ''))} caracteres")
+
+                    # FIX: Limpiar flags antes de regenerar para evitar conflictos
+                    st.session_state._generating_response = False
                     st.session_state.await_response = True
-                    print(f"⏳ [LOG] await_response establecido a True. Ejecutando st.rerun()...")
+                    print(f"🔄 [LOG] Esperando nueva respuesta. Total mensajes: {len(st.session_state.messages)}")
                     st.rerun()
         else:
             # Solo botón de audio (sin regenerar)
-            col_audio, col_space = st.columns([1.2, 10], gap="medium")
+            col_audio, col_space = st.columns([1.2, 10], gap="small")
 
             with col_audio:
                 if st.session_state[f'audio_playing_{unique_key}']:
-                    if st.button("⏸️ Pausar", key=f"pause_{unique_key}", help="Pausar audio", use_container_width=True):
+                    if st.button("⏸️", key=f"pause_{unique_key}", help="Pausar audio", use_container_width=True):
                         st.session_state[f'audio_playing_{unique_key}'] = False
                         st.rerun()
                 else:
-                    if st.button("▶️ Audio", key=f"play_{unique_key}", help="Reproducir audio", use_container_width=True):
-                        with st.spinner(""):
+                    if st.button("▶️", key=f"play_{unique_key}", help="Reproducir audio", use_container_width=True):
+                        with st.spinner("Generando audio..."):
                             processed_text = self.tts_manager.preprocess_text_for_tts(text)
                             audio_data = self.tts_manager.text_to_speech_fast(processed_text)
                             if audio_data:
@@ -1170,4 +1238,5 @@ class UIComponents:
             # Cerrar menú en caso de error
             if hasattr(st.session_state, 'active_menu'):
                 del st.session_state.active_menu
+                
                 

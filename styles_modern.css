@@ -1,6 +1,188 @@
-/* U-TUTOR v5.0 - Estilos Modernos (Inspirados en Claude.com) */
+/* U-TUTOR v5.0 - Estilos Modernos - Solo CSS, sin JavaScript */
 
-/* ===== ANIMACIONES Y TRANSICIONES ===== */
+/* ============================================
+   RESET Y BASE
+   ============================================ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* ============================================
+   CONTENEDOR PRINCIPAL - FORZAR FLEXBOX
+   ============================================ */
+[data-testid="stAppViewContainer"] {
+    display: flex !important;
+    flex-direction: row !important;
+    width: 100% !important;
+    height: 100vh !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    align-items: stretch !important;
+}
+
+/* ============================================
+   SIDEBAR - NATIVO DE STREAMLIT
+   ============================================ */
+[data-testid="stSidebar"] {
+    flex: 0 0 30% !important;
+    width: 30% !important;
+    min-width: 300px !important;
+    max-width: 500px !important;
+    height: 100vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    border-right: 1px solid rgba(160, 196, 255, 0.15) !important;
+    position: relative !important;
+    background: linear-gradient(180deg, rgba(5, 7, 10, 0.9) 0%, rgba(11, 17, 22, 0.95) 100%) !important;
+    transition: all 0.3s ease !important;
+}
+
+/* CUANDO STREAMLIT OCULTA LA SIDEBAR - CRUCIAL */
+[data-testid="stSidebar"][style*="display:none"],
+[data-testid="stSidebar"][style*="display: none"],
+[data-testid="stSidebar"].st-emotion-cache-0 {
+    display: none !important;
+    flex: 0 0 0 !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    overflow: hidden !important;
+}
+
+/* FIX: Asegurar que el main se expanda cuando la sidebar está colapsada */
+[data-testid="stAppViewContainer"]:has([data-testid="stSidebar"][style*="display:none"]) [data-testid="stMain"],
+[data-testid="stAppViewContainer"]:has([data-testid="stSidebar"][style*="display: none"]) [data-testid="stMain"],
+[data-testid="stAppViewContainer"]:has([data-testid="stSidebar"][style*="width:0"]) [data-testid="stMain"],
+[data-testid="stAppViewContainer"]:has([data-testid="stSidebar"][style*="width: 0"]) [data-testid="stMain"] {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* ALTERNATIVA: Si el sidebar tiene width 0px (desktop collapsed state) */
+[data-testid="stSidebar"][style*="width: 0"],
+[data-testid="stSidebar"][style*="width:0"] {
+    display: none !important;
+    flex: 0 0 0 !important;
+}
+
+/* ============================================
+   CONTENEDOR INTERNO DE STREAMLIT
+   ============================================ */
+/* Este es el div que Streamlit inserta entre stAppViewContainer y stMain */
+[class*="st-emotion-cache"][class*="e4man111"],
+.st-emotion-cache-6px8kg,
+[class*="st-emotion-cache"] [class*="st-emotion-cache"],
+div[class*="st-emotion"] {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    height: 100vh !important;
+}
+
+/* Asegurar que todos los divs intermedios permitan expansión */
+[data-testid="stAppViewContainer"] > div,
+[data-testid="stAppViewContainer"] > div > div {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+}
+
+/* ============================================
+   MAIN CONTENT - OCUPAR ESPACIO RESTANTE
+   ============================================ */
+[data-testid="stMain"],
+.stMain,
+.main {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+}
+
+/* Contenedores internos del main */
+.stMainBlockContainer,
+[data-testid="stMainBlockContainer"],
+.main .block-container,
+.block-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    padding: 1.5rem !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    flex: 1 1 auto !important;
+}
+
+/* FIX: Asegurar que los containers del main siempre expandan */
+[data-testid="stMainBlockContainer"] > div,
+.block-container > div,
+.main > div {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* ============================================
+   CONTENEDOR DEL CHAT
+   ============================================ */
+.u-tutor-chat {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 1rem !important;
+    box-sizing: border-box !important;
+}
+
+.u-tutor-messages {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    margin-bottom: 20px !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+.u-tutor-message {
+    display: flex !important;
+    margin-bottom: 10px !important;
+    width: 100% !important;
+}
+
+.u-tutor-message.user {
+    justify-content: flex-end !important;
+}
+
+.u-tutor-message.assistant {
+    justify-content: flex-start !important;
+}
+
+.u-tutor-bubble-user,
+.u-tutor-bubble-assistant {
+    max-width: 70%;
+    padding: 12px 16px;
+    border-radius: 14px;
+    word-wrap: break-word;
+    line-height: 1.6;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 0.3s ease-in;
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -12,126 +194,6 @@
     }
 }
 
-@keyframes slideInRight {
-    from {
-        opacity: 0;
-        transform: translateX(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-@keyframes slideInLeft {
-    from {
-        opacity: 0;
-        transform: translateX(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-@keyframes pulse {
-    0%, 100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.5;
-    }
-}
-
-/* ===== CONTENEDOR DE INPUT (MEJORADO) ===== */
-.input-container {
-    margin-top: 20px;
-    padding: 0 20px 20px 20px;
-    position: relative;
-}
-
-.input-wrapper {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    background: rgba(255, 255, 255, 0.02);
-    padding: 12px 16px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    transition: all 0.2s ease;
-}
-
-.input-wrapper:focus-within {
-    border: 1px solid rgba(160, 196, 255, 0.3);
-    background: rgba(255, 255, 255, 0.04);
-    box-shadow: 0 0 0 3px rgba(160, 196, 255, 0.1);
-}
-
-.send-button-wrapper {
-    display: flex;
-    justify-content: flex-end;
-    transition: transform 0.2s ease;
-}
-
-/* ===== CONTENEDOR DEL CHAT (MEJORADO) ===== */
-.u-tutor-chat {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 20px;
-    animation: fadeIn 0.3s ease;
-}
-
-.u-tutor-messages {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin-bottom: 20px;
-}
-
-.u-tutor-message {
-    display: flex;
-    margin-bottom: 8px;
-    animation: fadeIn 0.3s ease;
-}
-
-.u-tutor-message.user {
-    justify-content: flex-end;
-    animation: slideInRight 0.3s ease;
-}
-
-.u-tutor-message.assistant {
-    justify-content: flex-start;
-    animation: slideInLeft 0.3s ease;
-}
-
-/* ===== BURBUJAS DE CHAT (MEJORADO) ===== */
-.u-tutor-bubble-user,
-.u-tutor-bubble-assistant {
-    max-width: 70%;
-    padding: 12px 16px;
-    border-radius: 16px;
-    word-wrap: break-word;
-    line-height: 1.5;
-    transition: all 0.2s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-}
-
-.u-tutor-bubble-user {
-    border-bottom-right-radius: 4px;
-}
-
-.u-tutor-bubble-assistant {
-    border-bottom-left-radius: 4px;
-}
-
-/* Hover effects */
-.u-tutor-bubble-user:hover,
-.u-tutor-bubble-assistant:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
-}
-
-/* ===== AVATARES (MEJORADO) ===== */
 .u-tutor-avatar {
     width: 36px;
     height: 36px;
@@ -141,124 +203,138 @@
     justify-content: center;
     margin: 0 10px;
     flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    transition: all 0.2s ease;
+    font-size: 18px;
+    background: rgba(160, 196, 255, 0.1);
+    border: 1px solid rgba(160, 196, 255, 0.2);
 }
 
-.u-tutor-avatar:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(160, 196, 255, 0.3);
-}
-
-/* ===== SIDEBAR (MEJORADO) ===== */
+/* ============================================
+   SIDEBAR CONTENT - MEJORADO
+   ============================================ */
 .u-tutor-sidebar {
-    padding: 15px;
+    padding: 20px 15px;
+}
+
+.u-tutor-sidebar h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: rgba(255, 255, 255, 0.9);
+    text-align: center;
+    letter-spacing: 0.5px;
 }
 
 .sidebar-separator {
     margin: 15px 0;
-    color: rgba(160, 196, 255, 0.3);
-    transition: color 0.2s ease;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(160, 196, 255, 0.2), transparent);
 }
 
-.sidebar-separator:hover {
-    color: rgba(160, 196, 255, 0.5);
+/* Botones en sidebar */
+.u-tutor-sidebar .stButton > button {
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid rgba(160, 196, 255, 0.2);
+    background: rgba(160, 196, 255, 0.08) !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    padding: 10px 12px !important;
 }
 
-/* ===== BOTONES (MEJORADO CON HOVER) ===== */
-button, [data-testid*="button"] {
-    transition: all 0.2s ease !important;
+.u-tutor-sidebar .stButton > button:hover {
+    background: rgba(160, 196, 255, 0.15) !important;
+    border-color: rgba(160, 196, 255, 0.4);
+    color: rgba(255, 255, 255, 1) !important;
+    box-shadow: 0 4px 12px rgba(160, 196, 255, 0.15);
 }
 
-button:hover:not(:disabled), [data-testid*="button"]:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+/* ============================================
+   INPUT CONTROLS
+   ============================================ */
+.input-container {
+    position: sticky;
+    bottom: 0;
+    margin-top: 20px;
+    padding: 15px 20px;
+    background: linear-gradient(180deg, transparent, rgba(11, 17, 22, 0.95));
+    z-index: 10;
 }
 
-button:disabled, [data-testid*="button"]:disabled {
-    opacity: 0.5 !important;
-    cursor: not-allowed !important;
-}
-
-/* ===== BOTONES DE AUDIO Y REGENERAR (MEJORADO) ===== */
-.tts-button-container-general,
-[class^="tts-button-container-"] {
-    margin: 12px 0;
-    animation: fadeIn 0.3s ease;
+.input-wrapper {
     display: flex;
-    align-items: center;
+    gap: 10px;
+    align-items: flex-end;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.send-button-wrapper {
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* ============================================
+   SCROLL PERSONALIZADO
+   ============================================ */
+html {
+    scroll-behavior: smooth;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(160, 196, 255, 0.4) 0%, rgba(100, 150, 255, 0.4) 100%);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(160, 196, 255, 0.6) 0%, rgba(100, 150, 255, 0.6) 100%);
+}
+
+/* ============================================
+   AUDIO BUTTONS
+   ============================================ */
+.tts-button-container-general {
+    margin: 10px 0;
+    display: flex;
     gap: 8px;
     flex-wrap: wrap;
 }
 
-.tts-audio-container-general,
-[class^="tts-audio-container-"] {
-    margin: 12px 0;
-    animation: fadeIn 0.3s ease;
+.tts-audio-container-general {
+    margin: 10px 0;
 }
 
-/* Botones de audio y regenerar */
-[class^="tts-button-container-"] button,
-.tts-button-container-general button {
-    /* Tamaño mejorado para touch */
-    min-height: 44px !important;
-    min-width: 44px !important;
-    padding: 10px 16px !important;
-    font-size: 16px !important;
-    font-weight: 600 !important;
-    border-radius: 10px !important;
-    transition: all 0.2s ease !important;
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
-    color: white !important;
-    border: none !important;
-    cursor: pointer !important;
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2) !important;
-}
-
-[class^="tts-button-container-"] button:hover,
-.tts-button-container-general button:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
-}
-
-[class^="tts-button-container-"] button:active,
-.tts-button-container-general button:active {
-    transform: translateY(0) !important;
-}
-
-/* ===== INPUTS Y TEXTAREAS (MEJORADO) ===== */
-input:not([disabled]),
-textarea:not([disabled]) {
-    transition: all 0.2s ease !important;
-}
-
-input:focus:not([disabled]),
-textarea:focus:not([disabled]) {
-    transform: translateY(-1px) !important;
-    box-shadow: 0 4px 12px rgba(160, 196, 255, 0.2) !important;
-}
-
-/* ===== RESPONSIVE DESIGN (MEJORADO) ===== */
-@media (max-width: 1024px) {
-    .u-tutor-chat {
-        padding: 16px;
-    }
-
-    .u-tutor-bubble-user,
-    .u-tutor-bubble-assistant {
-        max-width: 80%;
-    }
-}
-
+/* ============================================
+   RESPONSIVE - TABLET (768px)
+   ============================================ */
 @media (max-width: 768px) {
-    .u-tutor-chat {
-        padding: 12px;
+    [data-testid="stSidebar"] {
+        background: rgba(5, 7, 10, 0.98) !important;
+    }
+
+    .stMainBlockContainer,
+    [data-testid="stMainBlockContainer"],
+    .main .block-container,
+    .block-container {
+        padding: 1rem;
+    }
+
+    .u-tutor-messages {
+        max-width: 100%;
     }
 
     .u-tutor-bubble-user,
     .u-tutor-bubble-assistant {
-        max-width: 90%;
+        max-width: 85%;
         padding: 10px 14px;
         font-size: 14px;
     }
@@ -266,216 +342,94 @@ textarea:focus:not([disabled]) {
     .u-tutor-avatar {
         width: 32px;
         height: 32px;
+        font-size: 16px;
         margin: 0 8px;
     }
 
     .input-wrapper {
-        flex-direction: row;
-        padding: 10px 12px;
-    }
-
-    .input-container {
-        padding: 0 12px 16px 12px;
-    }
-
-    /* Botones de audio y regenerar en tablet */
-    [class^="tts-button-container-"] button,
-    .tts-button-container-general button {
-        min-height: 40px !important;
-        min-width: 40px !important;
-        padding: 8px 12px !important;
-        font-size: 14px !important;
+        gap: 8px;
+        flex-direction: column;
     }
 }
 
+/* ============================================
+   RESPONSIVE - MOBILE (<480px)
+   ============================================ */
 @media (max-width: 480px) {
+    [data-testid="stAppViewContainer"] {
+        flex-direction: column;
+    }
+
+    [data-testid="stSidebar"] {
+        width: 100% !important;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid rgba(160, 196, 255, 0.1);
+        position: relative;
+    }
+
+    [data-testid="stMain"],
+    .stMain {
+        height: auto;
+        min-height: 100vh;
+    }
+
+    .stMainBlockContainer,
+    [data-testid="stMainBlockContainer"],
+    .main .block-container,
+    .block-container {
+        padding: 0.75rem;
+    }
+
     .u-tutor-messages {
-        gap: 12px;
+        max-width: 100%;
     }
 
     .u-tutor-bubble-user,
     .u-tutor-bubble-assistant {
-        max-width: 95%;
-        padding: 10px 12px;
+        max-width: 92%;
+        padding: 8px 12px;
         font-size: 13px;
-        border-radius: 12px;
+    }
+
+    .input-wrapper {
+        flex-direction: column;
+        gap: 6px;
     }
 
     .u-tutor-avatar {
         width: 28px;
         height: 28px;
+        font-size: 14px;
         margin: 0 6px;
-        font-size: 14px;
     }
 
-    .input-wrapper {
-        gap: 8px;
-        padding: 8px 10px;
-    }
-
-    /* Botones de audio y regenerar en móvil - OPTIMIZADOS PARA TOUCH */
-    [class^="tts-button-container-"],
-    .tts-button-container-general {
-        gap: 6px !important;
-        margin: 10px 0 !important;
-    }
-
-    [class^="tts-button-container-"] button,
-    .tts-button-container-general button {
-        min-height: 48px !important;
-        min-width: 48px !important;
-        padding: 12px 14px !important;
-        font-size: 15px !important;
-        font-weight: 700 !important;
-        border-radius: 8px !important;
-        flex: 1;
+    .input-container {
+        padding: 10px 12px;
     }
 }
 
-/* ===== SCROLLBAR PERSONALIZADA ===== */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+/* ============================================
+   ANIMACIONES Y EFECTOS
+   ============================================ */
+.u-tutor-bubble-user,
+.u-tutor-bubble-assistant {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.02);
-}
-
-::-webkit-scrollbar-thumb {
-    background: rgba(160, 196, 255, 0.2);
-    border-radius: 4px;
-    transition: background 0.2s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: rgba(160, 196, 255, 0.4);
-}
-
-/* ===== INPUT FIJO EN LA PARTE INFERIOR ===== */
-/* Contenedor principal con padding-bottom para el input fijo */
-[data-testid="stAppViewContainer"] {
-    padding-bottom: 140px !important;
-}
-
-/* Contenedor del input fijo */
-.chat-input-fixed-container {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    background: linear-gradient(to top, rgba(8, 11, 23, 0.98), rgba(8, 11, 23, 0.95));
-    backdrop-filter: blur(10px);
-    border-top: 1px solid rgba(160, 196, 255, 0.15);
-    padding: 16px 20px;
-    z-index: 1000;
-    box-sizing: border-box;
-    animation: slideInUp 0.3s ease;
-}
-
-/* Animación para el input fijo */
-@keyframes slideInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Contenedor máximo para el input fijo */
-.chat-input-fixed-inner {
-    max-width: 1100px;
-    margin: 0 auto;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-/* Input dentro del contenedor fijo */
-.chat-input-fixed-container input {
-    flex: 1;
-    background: rgba(255, 255, 255, 0.04) !important;
-    border: 1px solid rgba(160, 196, 255, 0.2) !important;
-    border-radius: 12px !important;
-    padding: 12px 16px !important;
-    color: #FFFFFF !important;
-    transition: all 0.2s ease !important;
-}
-
-.chat-input-fixed-container input:focus {
-    background: rgba(255, 255, 255, 0.06) !important;
-    border-color: rgba(160, 196, 255, 0.4) !important;
-    box-shadow: 0 0 0 3px rgba(160, 196, 255, 0.1) !important;
-}
-
-.chat-input-fixed-container input::placeholder {
-    color: rgba(255, 255, 255, 0.5) !important;
-}
-
-/* Botón de envío en el input fijo */
-.chat-input-fixed-container button {
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
-    color: #FFFFFF !important;
-    border: none !important;
-    border-radius: 10px !important;
-    padding: 10px 20px !important;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease !important;
-    min-width: 50px;
-}
-
-.chat-input-fixed-container button:hover {
+.u-tutor-bubble-user:hover,
+.u-tutor-bubble-assistant:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.chat-input-fixed-container button:active {
-    transform: translateY(0);
-}
-
-/* Responsive design para input fijo */
-@media (max-width: 768px) {
-    [data-testid="stAppViewContainer"] {
-        padding-bottom: 120px !important;
-    }
-
-    .chat-input-fixed-container {
-        padding: 12px 12px;
-    }
-
-    .chat-input-fixed-container input {
-        padding: 10px 12px !important;
-        font-size: 14px !important;
-    }
-
-    .chat-input-fixed-container button {
-        padding: 8px 16px !important;
-        min-width: 45px;
-    }
-}
-
-@media (max-width: 480px) {
-    [data-testid="stAppViewContainer"] {
-        padding-bottom: 100px !important;
-    }
-
-    .chat-input-fixed-container {
-        padding: 10px;
-    }
-
-    .chat-input-fixed-container input {
-        padding: 8px 10px !important;
-        font-size: 13px !important;
-    }
-
-    .chat-input-fixed-container button {
-        padding: 8px 12px !important;
-        min-width: 40px;
-        font-size: 14px;
-    }
+/* ============================================
+   VARIABLES Y TEMAS
+   ============================================ */
+[data-testid="stSidebar"] {
+    --bg-primary: #05070a;
+    --bg-secondary: #0b1116;
+    --border-color: rgba(160, 196, 255, 0.1);
+    --text-primary: #a0c4ff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
 }

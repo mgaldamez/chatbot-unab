@@ -205,6 +205,7 @@ class UTutorApp:
         if css_content:
             st.markdown(f'<style>{css_content}</style>', unsafe_allow_html=True)
 
+
     def _apply_settings_changes(self):
         """Aplica cambios de configuración si se modificaron - U-TUTOR v5.0"""
         if st.session_state.get('settings_changed', False):
@@ -258,6 +259,7 @@ class UTutorApp:
         if "settings_changed" not in st.session_state:
             st.session_state.settings_changed = False
 
+
         if "show_config_page" not in st.session_state:
             st.session_state.show_config_page = False
     
@@ -265,11 +267,10 @@ class UTutorApp:
         """Ejecuta la aplicación principal - U-TUTOR v5.0"""
         # Aplicar tema dinámico
         self._apply_theme()
-        
+
         # Renderizar sidebar
         self.ui_components.render_sidebar()
-      
-        
+
         # Renderizar área principal de chat
         self.ui_components.render_main_chat_area()
         
@@ -392,6 +393,7 @@ class UTutorApp:
     def _handle_user_input(self):
         """
         Maneja la entrada de texto del usuario con input FIJO en la parte inferior - U-TUTOR v5.0
+        FIX: Bloquear input mientras se genera respuesta
         """
 
         # 1️⃣ No mostrar input si estamos en la página de configuración
@@ -410,30 +412,42 @@ class UTutorApp:
             st.session_state.user_input = ""
             st.session_state.clear_input = False
 
+        # 3️⃣ FIX: Verificar si se está generando respuesta
+        is_generating = st.session_state.get("await_response", False)
+
         # 3️⃣ Renderizar input FIJO al fondo de la pantalla
         st.markdown('<div class="chat-input-fixed-container">', unsafe_allow_html=True)
         st.markdown('<div class="chat-input-fixed-inner">', unsafe_allow_html=True)
 
         col_input, col_button = st.columns([20, 1], gap="small")
 
-        # 4️⃣ Input de texto - RENDERIZADO FIJO
+        # 4️⃣ Input de texto - RENDERIZADO FIJO (DESHABILITADO SI SE ESTÁ GENERANDO)
         with col_input:
+            # FIX: Deshabilitar input mientras se genera
             prompt = st.text_input(
                 label="Mensaje",
                 key="user_input",
-                placeholder="Escribe tu pregunta...",
-                label_visibility="collapsed"
+                placeholder="⏳ Esperando respuesta..." if is_generating else "Escribe tu pregunta...",
+                label_visibility="collapsed",
+                disabled=is_generating  # 🔴 BLOQUEAR INPUT DURANTE GENERACIÓN
             )
 
-        # 5️⃣ Botón de enviar - RENDERIZADO FIJO
+        # 5️⃣ Botón de enviar - RENDERIZADO FIJO (DESHABILITADO SI SE ESTÁ GENERANDO)
         with col_button:
-            send_button = st.button("➤", use_container_width=True, key="send_button", help="Enviar (Enter)")
+            # FIX: Deshabilitar botón mientras se genera
+            send_button = st.button(
+                "⏳" if is_generating else "➤",
+                use_container_width=True,
+                key="send_button",
+                help="Esperando respuesta..." if is_generating else "Enviar (Enter)",
+                disabled=is_generating  # 🔴 BLOQUEAR BOTÓN DURANTE GENERACIÓN
+            )
 
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # 6️⃣ Detectar si el usuario envió el mensaje
-        if (send_button or (prompt and prompt.strip() != "")) and not st.session_state.get("await_response", False):
+        # 6️⃣ Detectar si el usuario envió el mensaje (NO SI SE ESTÁ GENERANDO)
+        if (send_button or (prompt and prompt.strip() != "")) and not is_generating:
 
             current_prompt = prompt.strip()
 
@@ -451,6 +465,7 @@ class UTutorApp:
     def _process_user_message(self, prompt: str):
         """
         Procesa un mensaje del usuario (desde texto o voz) - U-TUTOR v5.0
+        FIX: Evitar duplicación de mensajes al sincronizar
         """
 
         # 1️⃣ Validar mensaje
@@ -465,10 +480,10 @@ class UTutorApp:
             st.session_state.current_conversation_id = self.db_manager.create_conversation(conversation_title)
 
         # 3️⃣ Agregar mensaje del usuario al historial de la sesión
-        st.session_state.messages.append({
-            "role": "user",
-            "content": prompt
-        })
+        # FIX: No duplicar si ya está en la sesión
+        user_message = {"role": "user", "content": prompt}
+        if not any(msg.get("content") == prompt and msg.get("role") == "user" for msg in st.session_state.messages[-3:]):
+            st.session_state.messages.append(user_message)
 
         # 4️⃣ Guardar mensaje en la base de datos
         self.db_manager.save_message(
@@ -477,17 +492,9 @@ class UTutorApp:
             prompt
         )
 
-        # 5️⃣ Sincronizar el historial desde la base de datos
-        try:
-            messages_data = self.db_manager.load_conversation_messages(
-                st.session_state.current_conversation_id
-            )
-            st.session_state.messages = [
-                {"role": role, "content": content} for role, content, _ in messages_data
-            ]
-        except Exception:
-            # Si falla la carga, mantenemos el mensaje en session_state
-            pass
+        # 5️⃣ NO sincronizar desde la BD después de guardar
+        # Esto causa duplicados. La sesión es la fuente de verdad mientras se está usando.
+        # Sincronización solo ocurre al cargar conversaciones existentes.
 
         # 6️⃣ Marcar que estamos esperando la respuesta del asistente
         st.session_state.await_response = True
@@ -496,7 +503,7 @@ class UTutorApp:
     def _generate_assistant_response(self):
         """
         Genera y muestra la respuesta del asistente con streaming - U-TUTOR v5.0
-        FIX: Mejor protección contra re-entrancy durante generación
+        FIX: Mejor protección contra re-entrancy y duplicación de mensajes
         """
         try:
             # FIX: Proteger contra re-entrancy - si ya estamos generando, salir
@@ -532,12 +539,24 @@ class UTutorApp:
                 else:
                     audio_response = full_response
 
-                # 3️⃣ Guardar mensaje del asistente en sesión y DB
+                # 3️⃣ FIX: Verificar que no haya un mensaje del asistente duplicado
+                # (esto puede ocurrir si se hizo rerun antes de limpiar await_response)
                 print(f"💾 [LOG] Guardando mensaje en sesión y BD...")
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": full_response
-                })
+
+                # Verificar si el último mensaje ya es del asistente (evitar duplicado)
+                if (st.session_state.messages and
+                    st.session_state.messages[-1].get("role") == "assistant"):
+                    print("⚠️ [LOG] Último mensaje ya es del asistente, reemplazando...")
+                    st.session_state.messages[-1] = {
+                        "role": "assistant",
+                        "content": full_response
+                    }
+                else:
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": full_response
+                    })
+
                 self.db_manager.save_message(
                     st.session_state.current_conversation_id,
                     "assistant",
@@ -614,6 +633,65 @@ window.addEventListener('message', event => {
         fetch(`?action=${data.action}&id=${data.id}`, {method:'POST'});
     }
 });
+
+// FIX: Ajustar layout cuando sidebar se oculta/muestra (MEJORADO PARA DESKTOP)
+(function adjustSidebarLayout() {
+    function updateLayout() {
+        const sidebar = document.querySelector('[data-testid="stSidebar"]');
+        const main = document.querySelector('[data-testid="stMain"]');
+        const appContainer = document.querySelector('[data-testid="stAppViewContainer"]');
+
+        if (!sidebar || !main || !appContainer) return;
+
+        const computedStyle = getComputedStyle(sidebar);
+        const sidebarWidth = computedStyle.width;
+        const sidebarDisplay = computedStyle.display;
+        const sidebarVisibility = computedStyle.visibility;
+
+        // MÚLTIPLES FORMAS EN QUE STREAMLIT OCULTA LA SIDEBAR:
+        // 1. En móvil: display: none
+        // 2. En desktop (collapsed): width: 0px o visibility: hidden
+        // 3. Inline styles pueden variar
+        const sidebarHidden =
+            sidebarDisplay === 'none' ||
+            sidebarWidth === '0px' ||
+            sidebarVisibility === 'hidden' ||
+            sidebar.style.display === 'none' ||
+            sidebar.offsetWidth === 0;
+
+        if (sidebarHidden) {
+            // Sidebar oculta: expandir main al 100%
+            main.style.flex = '1 1 100%';
+            main.style.width = '100%';
+            main.style.maxWidth = 'none';
+            appContainer.style.gap = '0';
+            console.log('📱 Sidebar oculta - Chat expandido al 100%');
+        } else {
+            // Sidebar visible: layout normal
+            main.style.flex = '1 1 auto';
+            main.style.width = '100%';
+            main.style.maxWidth = '100%';
+            appContainer.style.gap = '0';
+            console.log('📌 Sidebar visible - Layout normal');
+        }
+    }
+
+    // Ejecutar inmediatamente
+    updateLayout();
+
+    // Observar cambios continuamente
+    const observer = new MutationObserver(updateLayout);
+    observer.observe(document.body, {
+        attributes: true,
+        subtree: true,
+        attributeFilter: ['style', 'class', 'data-testid'],
+        attributeOldValue: true,
+        characterData: false
+    });
+
+    // Observar también cambios de tamaño (resize)
+    window.addEventListener('resize', updateLayout);
+})();
 </script>
 """, unsafe_allow_html=True)
 
