@@ -3,7 +3,7 @@
 
 U-Tutor v5.0 es un asistente educativo inteligente diseñado para ayudar a estudiantes con sus dudas académicas. La aplicación está construida con Python y utiliza tecnologías modernas para ofrecer una experiencia de aprendizaje interactiva y personalizada.
 
-> **Nota:** A partir de v5.0, ejecuta la aplicación con: `streamlit run chat_limpio.py`
+> **Nota:** A partir de v5.0, ejecuta la aplicación con: `streamlit run main.py`
 
 ## ✨ Funcionalidades Activas
 
@@ -74,7 +74,7 @@ U-Tutor v5.0 es un asistente educativo inteligente diseñado para ayudar a estud
 
 ```
 chatbot-unab/
-├── chat_limpio.py             # 🚀 PRINCIPAL: Punto de entrada de v5.0 (Streamlit nativo, sin bugs)
+├── main.py             # 🚀 PRINCIPAL: Punto de entrada de v5.0 (Streamlit nativo, sin bugs)
 ├── chat_manager.py            # 🤖 Gestión de IA y respuestas con streaming
 ├── database_manager.py        # 💾 Gestión de base de datos SQLite
 ├── TTSManager.py              # 🔊 Gestión de texto a voz (TTS)
@@ -90,7 +90,7 @@ chatbot-unab/
 
 ### 📋 Descripción de Módulos (v5.0)
 
-- **`chat_limpio.py`** ⭐ **NUEVO:** Aplicación principal completamente rediseñada usando componentes nativos de Streamlit
+- **`main.py`** ⭐ **NUEVO:** Aplicación principal completamente rediseñada usando componentes nativos de Streamlit
   - Elimina todos los bugs de sidebar y CSS
   - 600+ líneas, código limpio y organizado en 7 secciones
   - Integra: database_manager, chat_manager, TTSManager, audio_manager
@@ -138,7 +138,7 @@ chatbot-unab/
 
 5. **Ejecutar la aplicación:**
    ```bash
-   streamlit run chat_limpio.py
+   streamlit run main.py
    ```
 
    La aplicación se abrirá en: `http://localhost:8501`
