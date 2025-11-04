@@ -1,7 +1,7 @@
-/* U-TUTOR v5.0 - Estilos Modernos - Solo CSS, sin JavaScript */
+/* U-TUTOR v5.0 - Estilos Modernos - Desktop & Responsive */
 
 /* ============================================
-   RESET Y BASE
+   RESET Y BASE - COMPATIBLE CON STREAMLIT
    ============================================ */
 * {
     margin: 0;
@@ -9,169 +9,83 @@
     box-sizing: border-box;
 }
 
-html, body {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
+body, html {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
 }
 
 /* ============================================
-   CONTENEDOR PRINCIPAL - FORZAR FLEXBOX
+   TEMA Y COLORES BASE
    ============================================ */
-[data-testid="stAppViewContainer"] {
-    display: flex !important;
-    flex-direction: row !important;
-    width: 100% !important;
-    height: 100vh !important;
-    gap: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    align-items: stretch !important;
+.stApp {
+    background-color: #0b1116 !important;
+    color: #e6e6fa !important;
 }
 
 /* ============================================
-   SIDEBAR - NATIVO DE STREAMLIT
+   SIDEBAR - STREAMLIT NATIVE
    ============================================ */
 [data-testid="stSidebar"] {
-    flex: 0 0 30% !important;
-    width: 30% !important;
-    min-width: 300px !important;
-    max-width: 500px !important;
-    height: 100vh !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
+    background-color: #05070a !important;
     border-right: 1px solid rgba(160, 196, 255, 0.15) !important;
-    position: relative !important;
-    background: linear-gradient(180deg, rgba(5, 7, 10, 0.9) 0%, rgba(11, 17, 22, 0.95) 100%) !important;
-    transition: all 0.3s ease !important;
 }
 
-/* CUANDO STREAMLIT OCULTA LA SIDEBAR - CRUCIAL */
-[data-testid="stSidebar"][style*="display:none"],
-[data-testid="stSidebar"][style*="display: none"],
-[data-testid="stSidebar"].st-emotion-cache-0 {
-    display: none !important;
-    flex: 0 0 0 !important;
-    width: 0 !important;
-    min-width: 0 !important;
-    max-width: 0 !important;
-    overflow: hidden !important;
+[data-testid="stSidebar"] > div {
+    background-color: transparent !important;
 }
 
-/* FIX: Asegurar que el main se expanda cuando la sidebar está colapsada */
-[data-testid="stAppViewContainer"]:has([data-testid="stSidebar"][style*="display:none"]) [data-testid="stMain"],
-[data-testid="stAppViewContainer"]:has([data-testid="stSidebar"][style*="display: none"]) [data-testid="stMain"],
-[data-testid="stAppViewContainer"]:has([data-testid="stSidebar"][style*="width:0"]) [data-testid="stMain"],
-[data-testid="stAppViewContainer"]:has([data-testid="stSidebar"][style*="width: 0"]) [data-testid="stMain"] {
-    flex: 1 1 100% !important;
-    width: 100% !important;
-    max-width: 100% !important;
-}
-
-/* ALTERNATIVA: Si el sidebar tiene width 0px (desktop collapsed state) */
-[data-testid="stSidebar"][style*="width: 0"],
-[data-testid="stSidebar"][style*="width:0"] {
-    display: none !important;
-    flex: 0 0 0 !important;
+[data-testid="stSidebar"] [data-testid="stSidebarContent"] {
+    background-color: transparent !important;
 }
 
 /* ============================================
-   CONTENEDOR INTERNO DE STREAMLIT
+   MAIN CONTENT
    ============================================ */
-/* Este es el div que Streamlit inserta entre stAppViewContainer y stMain */
-[class*="st-emotion-cache"][class*="e4man111"],
-.st-emotion-cache-6px8kg,
-[class*="st-emotion-cache"] [class*="st-emotion-cache"],
-div[class*="st-emotion"] {
-    display: flex !important;
-    flex-direction: column !important;
-    flex: 1 1 100% !important;
-    width: 100% !important;
-    height: 100vh !important;
+[data-testid="stMain"] {
+    background-color: #0b1116 !important;
+    padding-bottom: 100px !important; /* Espacio para el input fijo */
 }
 
-/* Asegurar que todos los divs intermedios permitan expansión */
-[data-testid="stAppViewContainer"] > div,
-[data-testid="stAppViewContainer"] > div > div {
-    flex: 1 1 100% !important;
-    width: 100% !important;
-}
-
-/* ============================================
-   MAIN CONTENT - OCUPAR ESPACIO RESTANTE
-   ============================================ */
-[data-testid="stMain"],
-.stMain,
-.main {
-    flex: 1 1 100% !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    height: 100vh !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-}
-
-/* Contenedores internos del main */
-.stMainBlockContainer,
 [data-testid="stMainBlockContainer"],
-.main .block-container,
 .block-container {
-    width: 100% !important;
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+    padding-top: 1rem !important;
     max-width: 100% !important;
-    height: auto !important;
-    padding: 1.5rem !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-    flex: 1 1 auto !important;
-}
-
-/* FIX: Asegurar que los containers del main siempre expandan */
-[data-testid="stMainBlockContainer"] > div,
-.block-container > div,
-.main > div {
-    width: 100% !important;
-    max-width: 100% !important;
+    background-color: transparent !important;
 }
 
 /* ============================================
-   CONTENEDOR DEL CHAT
+   CHAT MESSAGES - ESTILOS
    ============================================ */
 .u-tutor-chat {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding: 1rem !important;
-    box-sizing: border-box !important;
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 1rem;
 }
 
 .u-tutor-messages {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 12px !important;
-    margin-bottom: 20px !important;
-    width: 100% !important;
-    max-width: none !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
 }
 
 .u-tutor-message {
-    display: flex !important;
-    margin-bottom: 10px !important;
-    width: 100% !important;
+    display: flex;
+    width: 100%;
+    margin-bottom: 8px;
 }
 
 .u-tutor-message.user {
-    justify-content: flex-end !important;
+    justify-content: flex-end;
 }
 
 .u-tutor-message.assistant {
-    justify-content: flex-start !important;
+    justify-content: flex-start;
 }
 
+/* BURBUJAS DE CHAT */
 .u-tutor-bubble-user,
 .u-tutor-bubble-assistant {
     max-width: 70%;
@@ -181,6 +95,18 @@ div[class*="st-emotion"] {
     line-height: 1.6;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     animation: fadeIn 0.3s ease-in;
+}
+
+.u-tutor-bubble-user {
+    background-color: #2b3a4a !important;
+    color: #a0c4ff !important;
+    border-bottom-right-radius: 6px;
+}
+
+.u-tutor-bubble-assistant {
+    background-color: #1b2a36 !important;
+    color: #a0c4ff !important;
+    border-bottom-left-radius: 6px;
 }
 
 @keyframes fadeIn {
@@ -194,6 +120,7 @@ div[class*="st-emotion"] {
     }
 }
 
+/* AVATARES */
 .u-tutor-avatar {
     width: 36px;
     height: 36px;
@@ -209,80 +136,154 @@ div[class*="st-emotion"] {
 }
 
 /* ============================================
-   SIDEBAR CONTENT - MEJORADO
+   INPUT FIJO AL FONDO
    ============================================ */
-.u-tutor-sidebar {
-    padding: 20px 15px;
-}
-
-.u-tutor-sidebar h2 {
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 20px;
-    color: rgba(255, 255, 255, 0.9);
-    text-align: center;
-    letter-spacing: 0.5px;
-}
-
-.sidebar-separator {
-    margin: 15px 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(160, 196, 255, 0.2), transparent);
-}
-
-/* Botones en sidebar */
-.u-tutor-sidebar .stButton > button {
-    width: 100%;
-    border-radius: 8px;
-    border: 1px solid rgba(160, 196, 255, 0.2);
-    background: rgba(160, 196, 255, 0.08) !important;
-    color: rgba(255, 255, 255, 0.8) !important;
-    transition: all 0.2s ease;
-    font-size: 14px;
-    padding: 10px 12px !important;
-}
-
-.u-tutor-sidebar .stButton > button:hover {
-    background: rgba(160, 196, 255, 0.15) !important;
-    border-color: rgba(160, 196, 255, 0.4);
-    color: rgba(255, 255, 255, 1) !important;
-    box-shadow: 0 4px 12px rgba(160, 196, 255, 0.15);
-}
-
-/* ============================================
-   INPUT CONTROLS
-   ============================================ */
-.input-container {
-    position: sticky;
+.chat-input-fixed-container {
+    position: fixed;
     bottom: 0;
-    margin-top: 20px;
-    padding: 15px 20px;
-    background: linear-gradient(180deg, transparent, rgba(11, 17, 22, 0.95));
-    z-index: 10;
+    left: 0;
+    right: 0;
+    background: linear-gradient(180deg, transparent, rgba(11, 17, 22, 0.98));
+    padding: 15px 20px 20px;
+    z-index: 100;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-.input-wrapper {
+.chat-input-fixed-inner {
+    max-width: 1000px;
+    margin: 0 auto;
     display: flex;
     gap: 10px;
     align-items: flex-end;
-    max-width: 100%;
-    margin: 0 auto;
 }
 
-.send-button-wrapper {
-    display: flex;
-    justify-content: flex-end;
+/* ============================================
+   INPUT FIELDS
+   ============================================ */
+.stTextInput > div > div > input {
+    background-color: #0f1720 !important;
+    color: #e6e6fa !important;
+    border-color: #2d3748 !important;
+}
+
+.stTextInput > div > div > input::placeholder {
+    color: rgba(230, 230, 250, 0.6) !important;
+}
+
+/* ============================================
+   BOTONES
+   ============================================ */
+.stButton > button {
+    background-color: #14232a !important;
+    color: #dbeefb !important;
+    border-color: rgba(160, 196, 255, 0.2) !important;
+    border-radius: 8px !important;
+    padding: 10px 16px !important;
+    transition: all 0.2s ease !important;
+}
+
+.stButton > button:hover {
+    background-color: #1b2f3a !important;
+    box-shadow: 0 4px 12px rgba(160, 196, 255, 0.15) !important;
+}
+
+/* ============================================
+   SIDEBAR BUTTONS
+   ============================================ */
+[data-testid="stSidebar"] .stButton > button {
+    background-color: rgba(160, 196, 255, 0.08) !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+    border-color: rgba(160, 196, 255, 0.2) !important;
+    width: 100% !important;
+    margin-bottom: 8px !important;
+}
+
+[data-testid="stSidebar"] .stButton > button:hover {
+    background-color: rgba(160, 196, 255, 0.15) !important;
+    color: rgba(255, 255, 255, 1) !important;
+}
+
+/* ============================================
+   SPINNER Y LOADING
+   ============================================ */
+[data-testid="stSpinner"] {
+    text-align: center;
+}
+
+/* ============================================
+   EXPANDERS
+   ============================================ */
+.stExpander {
+    border-color: rgba(160, 196, 255, 0.2) !important;
+}
+
+[data-testid="stExpanderDetails"] {
+    background-color: rgba(11, 17, 22, 0.8) !important;
+}
+
+/* ============================================
+   INFO / WARNING / ERROR MESSAGES
+   ============================================ */
+.stAlert {
+    background-color: rgba(11, 17, 22, 0.8) !important;
+    border-left-color: #a0c4ff !important;
+}
+
+.stInfo {
+    background-color: rgba(30, 80, 120, 0.3) !important;
+    color: #a0c4ff !important;
+}
+
+.stSuccess {
+    background-color: rgba(40, 120, 80, 0.3) !important;
+    color: #7dd3a1 !important;
+}
+
+.stWarning {
+    background-color: rgba(120, 100, 40, 0.3) !important;
+    color: #f8c471 !important;
+}
+
+.stError {
+    background-color: rgba(120, 40, 40, 0.3) !important;
+    color: #f77e7e !important;
+}
+
+/* ============================================
+   SELECTBOX Y INPUTS
+   ============================================ */
+[data-baseweb="select"] {
+    background-color: #0f1720 !important;
+}
+
+[data-baseweb="input"] input {
+    background-color: #0f1720 !important;
+    color: #e6e6fa !important;
+}
+
+/* ============================================
+   TABS
+   ============================================ */
+[role="tablist"] {
+    border-bottom-color: rgba(160, 196, 255, 0.1) !important;
+}
+
+[role="tab"] {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+[role="tab"][aria-selected="true"] {
+    color: #a0c4ff !important;
+    border-bottom-color: #a0c4ff !important;
 }
 
 /* ============================================
    SCROLL PERSONALIZADO
    ============================================ */
-html {
-    scroll-behavior: smooth;
-}
-
 ::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -300,41 +301,18 @@ html {
 }
 
 /* ============================================
-   AUDIO BUTTONS
+   RESPONSIVE - TABLET (1024px Y MENOR)
    ============================================ */
-.tts-button-container-general {
-    margin: 10px 0;
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.tts-audio-container-general {
-    margin: 10px 0;
-}
-
-/* ============================================
-   RESPONSIVE - TABLET (768px)
-   ============================================ */
-@media (max-width: 768px) {
-    [data-testid="stSidebar"] {
-        background: rgba(5, 7, 10, 0.98) !important;
-    }
-
-    .stMainBlockContainer,
+@media (max-width: 1024px) {
     [data-testid="stMainBlockContainer"],
-    .main .block-container,
     .block-container {
-        padding: 1rem;
-    }
-
-    .u-tutor-messages {
-        max-width: 100%;
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
     }
 
     .u-tutor-bubble-user,
     .u-tutor-bubble-assistant {
-        max-width: 85%;
+        max-width: 75%;
         padding: 10px 14px;
         font-size: 14px;
     }
@@ -345,56 +323,23 @@ html {
         font-size: 16px;
         margin: 0 8px;
     }
-
-    .input-wrapper {
-        gap: 8px;
-        flex-direction: column;
-    }
 }
 
 /* ============================================
-   RESPONSIVE - MOBILE (<480px)
+   RESPONSIVE - MOBILE (768px Y MENOR)
    ============================================ */
-@media (max-width: 480px) {
-    [data-testid="stAppViewContainer"] {
-        flex-direction: column;
-    }
-
-    [data-testid="stSidebar"] {
-        width: 100% !important;
-        height: auto;
-        border-right: none;
-        border-bottom: 1px solid rgba(160, 196, 255, 0.1);
-        position: relative;
-    }
-
-    [data-testid="stMain"],
-    .stMain {
-        height: auto;
-        min-height: 100vh;
-    }
-
-    .stMainBlockContainer,
+@media (max-width: 768px) {
     [data-testid="stMainBlockContainer"],
-    .main .block-container,
     .block-container {
-        padding: 0.75rem;
-    }
-
-    .u-tutor-messages {
-        max-width: 100%;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
     }
 
     .u-tutor-bubble-user,
     .u-tutor-bubble-assistant {
-        max-width: 92%;
-        padding: 8px 12px;
+        max-width: 85%;
+        padding: 10px 12px;
         font-size: 13px;
-    }
-
-    .input-wrapper {
-        flex-direction: column;
-        gap: 6px;
     }
 
     .u-tutor-avatar {
@@ -404,32 +349,58 @@ html {
         margin: 0 6px;
     }
 
-    .input-container {
-        padding: 10px 12px;
+    .chat-input-fixed-container {
+        padding: 10px 12px 15px;
+    }
+
+    .chat-input-fixed-inner {
+        gap: 8px;
     }
 }
 
 /* ============================================
-   ANIMACIONES Y EFECTOS
+   RESPONSIVE - MOBILE PEQUEÑO (480px Y MENOR)
    ============================================ */
-.u-tutor-bubble-user,
-.u-tutor-bubble-assistant {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
+@media (max-width: 480px) {
+    [data-testid="stMainBlockContainer"],
+    .block-container {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
 
-.u-tutor-bubble-user:hover,
-.u-tutor-bubble-assistant:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    .u-tutor-chat {
+        padding: 0 0.5rem;
+    }
+
+    .u-tutor-bubble-user,
+    .u-tutor-bubble-assistant {
+        max-width: 92%;
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+
+    .u-tutor-avatar {
+        width: 28px;
+        height: 28px;
+        font-size: 13px;
+        margin: 0 4px;
+    }
+
+    .stButton > button {
+        padding: 8px 12px !important;
+        font-size: 12px !important;
+    }
 }
 
 /* ============================================
-   VARIABLES Y TEMAS
+   PRINT STYLES
    ============================================ */
-[data-testid="stSidebar"] {
-    --bg-primary: #05070a;
-    --bg-secondary: #0b1116;
-    --border-color: rgba(160, 196, 255, 0.1);
-    --text-primary: #a0c4ff;
-    --text-secondary: rgba(255, 255, 255, 0.7);
+@media print {
+    .chat-input-fixed-container {
+        display: none !important;
+    }
+
+    [data-testid="stSidebar"] {
+        display: none !important;
+    }
 }
