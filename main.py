@@ -1,27 +1,75 @@
-# U-TUTOR v5.0 - Aplicación principal con funcionalidades de audio, streaming y manejo avanzado de errores
+# U-TUTOR v5.0 - Aplicación principal optimizada
 import os
 from dotenv import load_dotenv
 import streamlit as st
-from langchain_openai import ChatOpenAI
+from functools import lru_cache
 
-# Importar nuestros módulos
+# Importar módulos principales
 from database_manager import DatabaseManager
 from chat_manager import ChatManager
 from ui_components import UIComponents
 from audio_manager import AudioManager
 
-from PyPDF2 import PdfReader
-import docx
-import pandas as pd
-
 
 # Cargar variables de entorno
 load_dotenv()
 
+
+# Cache para DatabaseManager - OPTIMIZACION
+@st.cache_resource
+def get_db_manager():
+    """Cachea el DatabaseManager para evitar reconexiones"""
+    return DatabaseManager()
+
+
+# Cache para AudioManager - OPTIMIZACION
+@st.cache_resource
+def get_audio_manager():
+    """Cachea el AudioManager para evitar reinicializaciones"""
+    return AudioManager()
+
+
+# ============================================
+# CACHE DE TEMAS - OPTIMIZACIÓN DE RENDIMIENTO
+# ============================================
+@lru_cache(maxsize=2)
+def get_theme_colors(theme: str = 'blueish') -> dict:
+    """
+    Retorna colores temáticos con cache para optimizar rendimiento.
+    El cache evita recomputar colores en cada render.
+    """
+    theme_palettes = {
+        'lilac': {
+            'bg': '#120018',
+            'sidebar_bg': '#0b0012',
+            'user_bg': '#DDA0DD',
+            'user_text': '#4B0082',
+            'assistant_bg': '#663399',
+            'assistant_text': '#FFFFFF',
+            'button_bg': '#663399',
+            'button_text': '#FFFFFF',
+            'input_bg': '#2a003b',
+            'input_text': '#E6E6FA'
+        },
+        'blueish': {
+            'bg': '#0b1116',
+            'sidebar_bg': '#05070a',
+            'user_bg': '#2b3a4a',
+            'user_text': '#a0c4ff',
+            'assistant_bg': '#1b2a36',
+            'assistant_text': '#a0c4ff',
+            'button_bg': '#14232a',
+            'button_text': '#dbeefb',
+            'input_bg': '#0f1720',
+            'input_text': '#E6E6FA'
+        }
+    }
+    return theme_palettes.get(theme, theme_palettes['blueish'])
+
 class UTutorApp:
     def __init__(self):
         """Inicializa la aplicación U-TUTOR v5.0"""
-        self.version = os.getenv("VERSION", "5s.0")
+        self.version = os.getenv("VERSION", "5.0")
         self.api_key = os.getenv("OPENAI_API_KEY")
         self.model = os.getenv("MODEL", "gpt-4")
 
@@ -37,12 +85,12 @@ class UTutorApp:
         
         # Cargar CSS personalizado
         self._load_custom_css()
-        
-        # Inicializar componentes
-        self.db_manager = DatabaseManager()
+
+        # Inicializar componentes (usando cache)
+        self.db_manager = get_db_manager()
         self.ui_components = UIComponents(self.db_manager, self.version)
-        self.audio_manager = AudioManager()
-        
+        self.audio_manager = get_audio_manager()
+
         # Hacer audio_manager disponible globalmente
         st.session_state.audio_manager = self.audio_manager
         
@@ -52,10 +100,12 @@ class UTutorApp:
 
         # Inicializar con configuración guardada
         temperature = st.session_state.get('temperature', 1)
-        
-        self.chat_manager = ChatManager(self.api_key, self.model, temperature)
-        
-        # Hacer chat_manager disponible globalmente para generación de títulos
+
+        # Crear ChatManager (no se cachea porque el modelo puede cambiar)
+        if 'chat_manager_instance' not in st.session_state:
+            st.session_state.chat_manager_instance = ChatManager(self.api_key, self.model, temperature)
+
+        self.chat_manager = st.session_state.chat_manager_instance
         st.session_state.chat_manager = self.chat_manager
 
         # Aplicar personalidad si existe
@@ -64,8 +114,8 @@ class UTutorApp:
 
         # Inicializar estado de la sesión
         self._init_session_state()
-        
-        # Aplicar cambios de configuración si los hay
+
+        # Aplicar cambios de configuración si los hay (después de inicializar session_state)
         self._apply_settings_changes()     
         action = st.query_params.get("action")
         conv_id = st.query_params.get("id")
@@ -81,491 +131,77 @@ class UTutorApp:
             elif action == "delete":
                 self._delete_conversation_direct(conv_id)
     def _apply_theme(self):
-        """Aplica el tema seleccionado - U-TUTOR v5.0"""
-        current_theme = st.session_state.get('theme', 'light')
-        
-        if current_theme == 'dark':
-            st.markdown("""
-            <style>
-            /* Tema Oscuro - Paleta Profesional */
-            .stApp {
-                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
-                color: #e8e8e8 !important;
-            }
-            
-            .main .block-container {
-                background: transparent !important;
-                color: #e8e8e8 !important;
-                z-index: 1;
+        """Aplica colores temáticos dinámicos - OPTIMIZADO CON CACHE"""
+        theme = st.session_state.get('theme', 'blueish')
+        colors = get_theme_colors(theme)  # Usa cache para evitar recompilación
 
-            }
-                        
-            .stVerticalBlock{
-                gap:8px;
-            }
-            .st-dl{
-                background-color: transparent;
-            } 
-            .st-aq{
-                border-top-right-radius:1rem;
-            }
-            .st-ap{
-                border-bottom-right-radius:1rem;
-            }
-            .st-ao{
-                border-top-left-radius:1rem;
-            }
-            .st-an{
-                border-bottom-left-radius:1rem;
-            }
-            
-            .stChatMessage[data-testid="user"] .stChatMessage__content {
-                background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%) !important;
-                color: #a0c4ff !important;
-                border: 1px solid #4a5568 !important;
-                border-radius: 18px 18px 4px 18px !important;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-                gap:8px;
-            }
-            
-            
-            .stChatMessage[data-testid="assistant"] .stChatMessage__content {
-                background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%) !important;
-                color: #e2e8f0 !important;
-                border: 1px solid #4a5568 !important;
-                border-radius: 18px 18px 18px 4px !important;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-            }
-            
-            /* Sidebar oscuro */
-            [data-testid="stSidebar"] {
-                background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%) !important;
-                border-right: 1px solid #4a5568 !important;
-                z-index: 999;
+        # Aplicar colores dinámicamente
+        st.markdown(f"""
+        <style>
+        .stApp {{
+            background: {colors['bg']} !important;
+            color: {colors['assistant_text']} !important;
+        }}
 
-            }
-            
-            [data-testid="stSidebarContent"] {
-                color: #e8e8e8 !important;
-                gap:16px !important;
-            }
-            
-            [data-testid="stSidebarUserContent"] {
-                color: #e8e8e8 !important;
-            }
-            
-            /* Botones del sidebar oscuro */
-            [data-testid="stSidebarContent"] .stButton button {
-                background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%) !important;
-                color: #a0c4ff !important;
-                border: 1px solid #4a5568 !important;
-                border-radius: 8px !important;
-                font-weight: 500 !important;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
-            }
-            
-            [data-testid="stSidebarContent"] .stButton button:hover {
-                background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%) !important;
-                color: #ffffff ;
-                box-shadow: 0 4px 12px rgba(160, 196, 255, 0.3) !important;
-                transform: translateY(-2px) !important;
-            }
-                [data-testid="stSidebarContent"] .stDownloadButton button {
-                background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%) !important;
-                color: #a0c4ff !important;
-                border: 1px solid #4a5568 !important;
-                border-radius: 8px !important;
-                font-weight: 500 !important;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
-            }
-            
-            [data-testid="stSidebarContent"] .stDownloadButton button:hover {
-                background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%) !important;
-                color: #ffffff ;
-                box-shadow: 0 4px 12px rgba(160, 196, 255, 0.3) !important;
-                transform: translateY(-2px) !important;
-            }
-            
-            /* Input del sidebar oscuro */
-            [data-testid="stSidebarContent"] .stTextInput input {
-                background-color: #2d3748 !important;
-                color: #e8e8e8 !important;
-                border: 1px solid #4a5568 !important;
-                border-radius: 8px !important;
-            }
-            
-            [data-testid="stSidebarContent"] .stTextInput input:focus {
-                border-color: #a0c4ff !important;
-                box-shadow: 0 0 0 2px rgba(160, 196, 255, 0.2) !important;
-            }
-            
-            /* Selectbox del sidebar oscuro */
-            [data-testid="stSidebarContent"] .stSelectbox > div > div {
-                background-color: #2d3748 !important;
-                color: #e8e8e8 !important;
-                border: 1px solid #4a5568 !important;
-                border-radius: 8px !important;
-            }
-            
-            /* Slider del sidebar oscuro */
-            [data-testid="stSidebarContent"] .stSlider > div > div > div > div {
-                background: linear-gradient(90deg, #a0c4ff 0%, #4a5568 100%) !important;
-            }
-            
-            /* Expanders del sidebar oscuro */
-            [data-testid="stSidebarContent"] .streamlit-expander {
-                background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%) !important;
-                border: 1px solid #4a5568 !important;
-                border-radius: 8px !important;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
-            }
-            
-            [data-testid="stSidebarContent"] .streamlit-expander .streamlit-expanderHeader {
-                background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%) !important;
-                color: #a0c4ff !important;
-                border-radius: 8px 8px 0 0 !important;
-            }
-            
-            [data-testid="stSidebarContent"] .streamlit-expander .streamlit-expanderContent {
-                background: transparent !important;
-                color: #e8e8e8 !important;
-            }
-            
-            /* Texto del sidebar oscuro */
-            [data-testid="stSidebarContent"] .stMarkdown {
-                color: #e8e8e8 !important;
-            }
-            
-            
-                                   
-            [data-testid="stSidebarContent"] h1, 
-            [data-testid="stSidebarContent"] h2, 
-            [data-testid="stSidebarContent"] h3 {
-                color: #a0c4ff !important;
-            }
-            
-            /* Chat input oscuro */
-            .stChatInput > div > div > div > textarea {
-                background-color: #2d3748 !important;
-                color: #e8e8e8 !important;
-                border: 1px solid #4a5568 !important;
-                border-radius: 8px !important;
-            }
-            
-            .stChatInput > div > div > div > textarea:focus {
-                border-color: #a0c4ff !important;
-                box-shadow: 0 0 0 2px rgba(160, 196, 255, 0.2) !important;
-            }
-            .st-dl{
-                background-color: transparent;
-            } 
-            .st-aq{
-                border-top-right-radius:1rem;
-            }
-            .st-ap{
-                border-bottom-right-radius:1rem;
-            }
-            .st-ao{
-                border-top-left-radius:1rem;
-            }
-            .st-an{
-                border-bottom-left-radius:1rem;
-            }
-            /* Botones principales oscuros */
-            .stButton > button {
-                background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%) !important;
-                color: #a0c4ff !important;
-                border: 1px solid #4a5568 !important;
-                border-radius: 8px !important;
-                font-weight: 500 !important;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
-            }
-            
-            .stButton > button:hover {
-                background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%) !important;
-                color: #ffffff !important;
-                box-shadow: 0 4px 12px rgba(160, 196, 255, 0.3) !important;
-                transform: translateY(-2px) !important;
-            }
-            
-            /* Métricas oscuras */
-            .stMetric {
-                background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%) !important;
-                border: 1px solid #4a5568 !important;
-                border-radius: 8px !important;
-                padding: 1rem !important;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
-            }
-            </style>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown("""
-            <style>
-            /* Tema Gris - Paleta Profesional */
-            [data-testid="stToolbar"]{
-                .stAppDeployButton,
-                #MainMenu {
-                    display: none !important;
-                }
-                background: #0b1116;
+        [data-testid="stSidebar"] {{
+            background: {colors['sidebar_bg']} !important;
+        }}
 
-            }
-            .stApp {
-                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%) !important;
-                color: #2c3e50 !important;
-            }
-            
-            .main .block-container {
-                background: transparent !important;
-                color: #2c3e50 !important;
-                z-index: 1;
+        .stChatMessage[data-testid="user"] .stChatMessage__content {{
+            background: {colors['user_bg']} !important;
+            color: {colors['user_text']} !important;
+        }}
 
-            }
-            .stVerticalBlock{
-                gap:8px;
-            }
-            
-            .st-dl{
-                background-color: transparent;
-            } 
-            .st-aq{
-                border-top-right-radius:1rem;
-            }
-            .st-ap{
-                border-bottom-right-radius:1rem;
-            }
-            .st-ao{
-                border-top-left-radius:1rem;
-            }
-            .st-an{
-                border-bottom-left-radius:1rem;
-            }
-            .stChatMessage[data-testid="user"] .stChatMessage__content {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-                color: #ffffff !important;
-                border: 1px solid #5a67d8 !important;
-                border-radius: 18px 18px 4px 18px !important;
-                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
-            }
-            
-            .stChatMessage[data-testid="assistant"] .stChatMessage__content {
-                background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%) !important;
-                color: #2d3748 !important;
-                border: 1px solid #e2e8f0 !important;
-                border-radius: 18px 18px 18px 4px !important;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-            }
-            
-            /* Sidebar gris */
-            
-            [data-testid="stSidebar"] {
-                background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%) !important;
-                border-right: 1px solid #e2e8f0 !important;
-            }
-            
-            [data-testid="stSidebarContent"] {
-                background: transparent !important;
-                color: #2d3748 !important;
-                gap:16px !important;
+        .stChatMessage[data-testid="assistant"] .stChatMessage__content {{
+            background: {colors['assistant_bg']} !important;
+            color: {colors['assistant_text']} !important;
+        }}
 
-            }
-            
-            [data-testid="stSidebarUserContent"] {
-                background: transparent !important;
-                color: #2d3748 !important;
-            }
-            
-            /* Botones del sidebar gris */
-            [data-testid="stSidebarContent"] .stButton button {
-                color: #ffffff !important;
-                border-radius: 4px !important;
-                font-weight: 500 !important;
-                justify-content: space-between;
-                text-align: left;
-            }
-            
-            [data-testid="stSidebarContent"] .stButton button:hover,
-            [data-testid="stSidebarContent"] .stDownloadButton button:hover {
-                background: linear-gradient(135deg, #5a67d8 0%, #667eea 100%) !important;
-                color: #ffffff !important;
-                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4) !important;
-                transform: translateY(-2px) !important;
-            }
-                        
-            
-            /* Input del sidebar gris */
-            [data-testid="stSidebarContent"] .stTextInput input {
-                color: #2d3748 !important;
-                border: 1px solid #e2e8f0 !important;
-                border-radius: 8px !important;
-            }
-            
-            [data-testid="stSidebarContent"] .stTextInput input:focus {
-                border-color: #667eea !important;
-                box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
-            }
-            
-            /* Selectbox del sidebar gris */
-            [data-testid="stSidebarContent"] .stSelectbox > div > div {
-                background-color: #ffffff !important;
-                color: #2d3748 !important;
-                border: 1px solid #e2e8f0 !important;
-                border-radius: 8px !important;
-            }
-            
-            /* Slider del sidebar gris */
-            [data-testid="stSidebarContent"] .stSlider > div > div > div > div {
-                background: linear-gradient(90deg, #667eea 0%, #764ba2 100%) !important;
-            }
-            
-            /* Expanders del sidebar gris */
-            [data-testid="stSidebarContent"] .streamlit-expander {
-                background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%) !important;
-                border: 1px solid #e2e8f0 !important;
-                border-radius: 8px !important;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-            }
-            
-            [data-testid="stSidebarContent"] .streamlit-expander .streamlit-expanderHeader {
-                background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%) !important;
-                color: #667eea !important;
-                border-radius: 8px 8px 0 0 !important;
-            }
-            
-            [data-testid="stSidebarContent"] .streamlit-expander .streamlit-expanderContent {
-                background: transparent !important;
-                color: #2d3748 !important;
-            }
-            
-            /* Texto del sidebar gris */
-            [data-testid="stSidebarContent"] .stMarkdown {
-                color: #2d3748 !important;
-            }
-            
-            [data-testid="stSidebarContent"] h1, 
-            [data-testid="stSidebarContent"] h2, 
-            [data-testid="stSidebarContent"] h3 {
-                color: #667eea !important;
-            }
-            
-            
-            
-            /* Botones principales grises */
-            [data-testid="stBaseButton-secondary"],
-            .stButton > button {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-            color: #ffffff !important;
-                border: 1px solid #5a67d8 !important;
-                border-radius: 8px !important;
-                font-weight: 500 !important;
-                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important;
-            }
-            
-            .stButton > button:hover {
-                background: linear-gradient(135deg, #5a67d8 0%, #667eea 100%) !important;
-                color: #ffffff !important;
-                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4) !important;
-                transform: translateY(-2px) !important;
-            }
-            
-            /* Métricas grises */
-            .stMetric {
-                background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%) !important;
-                border: 1px solid #e2e8f0 !important;
-                border-radius: 8px !important;
-                padding: 1rem !important;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-            }
-            
-            /* Responsive Design Mejorado */
-            @media (max-width: 768px) {
-                .stChatMessage[data-testid="user"] .stChatMessage__content,
-                .stChatMessage[data-testid="assistant"] .stChatMessage__content {
-                    max-width: 90% !important;
-                    font-size: 14px !important;
-                }
-                
-                [data-testid="stSidebarContent"] .stButton button {
-                    padding: 0.4rem 0.8rem !important;
-                    font-size: 12px !important;
-                }
-                
-                .main .block-container {
-                    padding: 0.5rem !important;
-                    z-index: 1;
+        .stButton > button {{
+            background: {colors['button_bg']} !important;
+            color: {colors['button_text']} !important;
+        }}
 
-                }
-            }
-            
-            @media (max-width: 480px) {
-                .stChatMessage[data-testid="user"] .stChatMessage__content,
-                .stChatMessage[data-testid="assistant"] .stChatMessage__content {
-                    max-width: 95% !important;
-                    padding: 8px 12px !important;
-                    font-size: 13px !important;
-                }
-                
-                [data-testid="stSidebarContent"] .stButton button {
-                    padding: 0.3rem 0.6rem !important;
-                    font-size: 11px !important;
-                }
-            }
-            </style>
-            """, unsafe_allow_html=True)
-    
-    def _load_custom_css(self):
-        """Carga estilos CSS personalizados - U-TUTOR v5.0"""
-        try:
-            with open('styles.css') as f:
-                css_content = f.read()
-                
-                # Aplicar tema dinámico
-                current_theme = st.session_state.get('theme', 'light')
-                if current_theme == 'dark':
-                    css_content = css_content.replace('[data-theme="dark"]', '')
-                    css_content += """
-                    :root {
-                        --light-bg: #1e1e1e;
-                        --light-text: #ffffff;
-                        --light-border: #404040;
-                        --user-bubble-bg: #2d3748;
-                        --user-bubble-text: #90cdf4;
-                        --assistant-bubble-bg: #2d3748;
-                        --assistant-bubble-text: #e2e8f0;
-                    }
-                    """
-                
-                st.markdown(f'<style>{css_content}</style>', unsafe_allow_html=True)
-        except FileNotFoundError:
-            pass  # Si no existe el archivo, continuar sin estilos personalizados
-        
-        # Atajos de teclado
+        .stTextInput > div > div > input {{
+            background: {colors['input_bg']} !important;
+            color: {colors['input_text']} !important;
+        }}
+        </style>
+        """, unsafe_allow_html=True)
+
+        # Agregar JavaScript para optimizar sidebar con GPU acceleration
         st.markdown("""
         <script>
-        document.addEventListener('keydown', function(e) {
-            // Ctrl/Cmd + N para nueva conversación
-            if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-                e.preventDefault();
-                const newConvBtn = document.querySelector('button[kind="primary"]');
-                if (newConvBtn) newConvBtn.click();
+        (function optimizeSidebar() {
+            try {
+                const sidebar = document.querySelector('[data-testid="stSidebar"]');
+                if (sidebar) {
+                    sidebar.style.willChange = 'width, margin, transform';
+                    sidebar.style.transform = 'translateZ(0)';
+                    sidebar.style.backfaceVisibility = 'hidden';
+                }
+            } catch (error) {
+                console.log('Sidebar optimization unavailable');
             }
-            
-            // Ctrl/Cmd + K para buscar
-            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-                e.preventDefault();
-                const searchInput = document.querySelector('input[aria-label*="Buscar conversación"]');
-                if (searchInput) searchInput.focus();
-            }
-
-            // Ctrl/Cmd + / para configuración
-            if ((e.ctrlKey || e.metaKey) && e.key === '/') {
-                e.preventDefault();
-                const configBtn = document.querySelector('button[data-testid="config_button"]');
-                if (configBtn) configBtn.click();
-            }
-        });
+        })();
         </script>
         """, unsafe_allow_html=True)
+    
+    @staticmethod
+    @st.cache_data
+    def _load_custom_css_cached():
+        """Cachea la carga de CSS para evitar relecturas - OPTIMIZACION"""
+        try:
+            with open('styles_modern.css', encoding='utf-8') as f:
+                return f.read()
+        except FileNotFoundError:
+            return ""
+
+    def _load_custom_css(self):
+        """Carga estilos CSS personalizados - U-TUTOR v5.0"""
+        css_content = self._load_custom_css_cached()
+        if css_content:
+            st.markdown(f'<style>{css_content}</style>', unsafe_allow_html=True)
 
     def _apply_settings_changes(self):
         """Aplica cambios de configuración si se modificaron - U-TUTOR v5.0"""
@@ -583,27 +219,41 @@ class UTutorApp:
         """Inicializa el estado de la sesión - U-TUTOR v5.0"""
         if "messages" not in st.session_state:
             st.session_state.messages = []
-        
+
         if "current_conversation_id" not in st.session_state:
             st.session_state.current_conversation_id = None
-        
+
         if "editing_title" not in st.session_state:
             st.session_state.editing_title = None
-        
+
         if "pending_message" not in st.session_state:
             st.session_state.pending_message = None
-        
+
         if "current_audio" not in st.session_state:
             st.session_state.current_audio = None
-        
+
         if "voice_input_active" not in st.session_state:
             st.session_state.voice_input_active = False
-        
+
         if "menu_counter" not in st.session_state:
             st.session_state.menu_counter = 0
+
         # Inicializar flag de espera de respuesta
         if "await_response" not in st.session_state:
             st.session_state.await_response = False
+
+        # Inicializar configuración (temperatura y personalidad)
+        if "temperature" not in st.session_state:
+            st.session_state.temperature = 1
+
+        if "personality" not in st.session_state:
+            st.session_state.personality = "Profesional"
+
+        if "settings_changed" not in st.session_state:
+            st.session_state.settings_changed = False
+
+        if "show_config_page" not in st.session_state:
+            st.session_state.show_config_page = False
     
     def run(self):
         """Ejecuta la aplicación principal - U-TUTOR v5.0"""
@@ -724,23 +374,11 @@ class UTutorApp:
   # ------------------ Render input y uploader ------------------
     def _render_input_controls(self):
         """Renderiza controles de entrada de texto - U-TUTOR v5.0"""
-        
+
         # No mostrar input si estamos en la página de configuración
         if st.session_state.show_config_page:
             return
-        
-        # Input de texto normal (sin funcionalidad de voz)
-        self._handle_user_input()
 
-
-    # ------------------ RENDER INPUT Y UPLOADER ------------------
-    def _render_input_controls(self):
-        """Renderiza controles de entrada de texto - U-TUTOR v5.0"""
-        
-        # No mostrar input si estamos en la página de configuración
-        if st.session_state.show_config_page:
-            return
-        
         # Input de texto normal (sin funcionalidad de voz)
         self._handle_user_input()
 
@@ -767,43 +405,45 @@ class UTutorApp:
             st.session_state.user_input = ""
             st.session_state.clear_input = False
 
-        # 3️⃣ Renderizar contenedor del input
+
+        # 4️⃣ Renderizar contenedor del input
         with st.container():
-            st.markdown("""
-                <div style="display:flex; justify-content:center; width:50%; margin:10px 0;">
-                    <div style="width:50%; max-width:10px;">
-                """, unsafe_allow_html=True)
+            st.markdown('<div class="input-container">', unsafe_allow_html=True)
+            st.markdown('<div class="input-wrapper">', unsafe_allow_html=True)
 
-            # 4️⃣ Columnas: input ocupa la mayoría del ancho, botón el resto
-            col_spacer, col_input, col_button, col_spacer2 = st.columns([3, 6, 1, 2], gap="small")
+            # 5️⃣ Columnas responsivas
+            col_input, col_button = st.columns([10, 1], gap="small")
 
-            # 5️⃣ Input de texto
+            # 6️⃣ Input de texto
             with col_input:
                 prompt = st.text_input(
-                    label="",
+                    label="Mensaje",
                     key="user_input",
                     placeholder="Escribe tu mensaje...",
                     label_visibility="collapsed"
                 )
 
-            # 6️⃣ Botón de enviar
+            # 7️⃣ Botón de enviar
             with col_button:
-                send_button = st.button("➤", use_container_width=True)
+                st.markdown('<div class="send-button-wrapper">', unsafe_allow_html=True)
+                send_button = st.button("➤", use_container_width=True, key="send_button")
+                st.markdown('</div>', unsafe_allow_html=True)
 
-            st.markdown(" ")  # Espaciado extra si hace falta
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-            # 7️⃣ Detectar si el usuario envió el mensaje
+            # 8️⃣ Detectar si el usuario envió el mensaje
             if (send_button or (prompt and prompt.strip() != "")) and not st.session_state.get("await_response", False):
-                
+
                 current_prompt = prompt.strip()
 
-                # 8️⃣ Procesar el mensaje
+                # 9️⃣ Procesar el mensaje
                 self._process_user_message(current_prompt)
 
-                # 9️⃣ Limpiar input en el próximo rerun
+                # 10️⃣ Limpiar input en el próximo rerun
                 st.session_state.clear_input = True
 
-                # 10️⃣ Forzar rerun para actualizar la UI
+                # 11️⃣ Forzar rerun para actualizar la UI
                 st.rerun()
 
 
@@ -961,6 +601,41 @@ window.addEventListener('message', event => {
 });
 </script>
 """, unsafe_allow_html=True)
+
+
+# ============================================
+# FUNCIÓN PARA RENDERIZAR INPUT FIJO
+# ============================================
+def render_fixed_chat_input():
+    """
+    Renderiza el input de chat fijo al fondo de la pantalla.
+    Se renderiza al final, después del contenido del chat.
+    El CSS '.chat-input-fixed-container' mantiene el input al fondo.
+    """
+    st.markdown('<div class="chat-input-fixed-container">', unsafe_allow_html=True)
+
+    col_input, col_button = st.columns([20, 1], gap="small")
+
+    with col_input:
+        user_input = st.text_input(
+            "",
+            placeholder="Escribe tu pregunta aquí...",
+            key="chat_input_fixed",
+            label_visibility="collapsed"
+        )
+
+    with col_button:
+        if st.button("📤", key="send_button_fixed", use_container_width=True, help="Enviar mensaje"):
+            if user_input.strip():
+                st.session_state.messages.append({
+                    "role": "user",
+                    "content": user_input
+                })
+                st.session_state.chat_input_fixed = ""
+                st.rerun()
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
 
 def main():
     """Función principal - U-TUTOR v5.0"""

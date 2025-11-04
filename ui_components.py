@@ -7,14 +7,18 @@ from typing import List, Tuple, Optional
 from database_manager import DatabaseManager
 from TTSManager import TTSManager
 
+@st.cache_resource
+def get_tts_manager():
+    """Cachea el TTSManager para evitar reinicializaciones - OPTIMIZACION"""
+    tts_engine = os.getenv("TTS_ENGINE", "edge-tts")
+    return TTSManager(engine_type=tts_engine)
+
 class UIComponents:
     def __init__(self, db_manager: DatabaseManager, version: str):
         """Inicializa UIComponents con estados de sesión - U-TUTOR v5.0"""
         self.db_manager = db_manager
         self.version = os.getenv("VERSION", "5.0")
-        tts_engine = os.getenv("TTS_ENGINE", "edge-tts")
-        self.tts_manager = TTSManager(engine_type=tts_engine)
-   
+        self.tts_manager = get_tts_manager()
         # Inicializar estados de sesión necesarios
         if 'theme' not in st.session_state:
             st.session_state.theme = 'blueish'
@@ -33,13 +37,14 @@ class UIComponents:
             st.session_state.auto_translate = False
 
     def _get_theme_css(self) -> str:
-        """Genera CSS según el tema actual en session_state.
+        """Genera CSS minimal - ahora delegado a styles_modern.css"""
+        # Los estilos están en styles_modern.css - este método solo retorna estilos de tema
+        return ""  # Vacío porque main.py maneja los temas ahora
 
-        Soporta 'lilac' y 'blueish'. Devuelve reglas con selectores amplios y `!important`
-        para evitar que el tema sea sobrescrito por estilos nativos de Streamlit.
-        """
+    def _get_theme_css_legacy(self) -> str:
+        """Mantener legacy solo como referencia"""
         theme = st.session_state.get('theme', 'blueish')
-        # Lilac theme: púrpura/lilac
+
         if theme == 'lilac':
             return """
             <style>
@@ -192,6 +197,22 @@ class UIComponents:
             .st-an{
                 border-bottom-left-radius:1rem;
             }
+            /* Métricas visibles con contraste - Lilac */
+            [data-testid="stMetric"] {
+                background: linear-gradient(135deg, #663399 0%, #8A2BE2 100%) !important;
+                border: 1px solid #DA70D6 !important;
+                border-radius: 8px !important;
+                padding: 1rem !important;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+            }
+            [data-testid="stMetricLabel"] {
+                color: #DDA0DD !important;
+            }
+            [data-testid="stMetricValue"] {
+                color: #FFFFFF !important;
+                font-size: 1.5rem !important;
+                font-weight: bold !important;
+            }
             </style>
             """
 
@@ -285,6 +306,24 @@ class UIComponents:
                 box-shadow: none !important;
                 border: none !important;
             }
+
+            /* Métricas visibles con contraste */
+            [data-testid="stMetric"] {
+                background: linear-gradient(135deg, #1b2a36 0%, #2d3748 100%) !important;
+                border: 1px solid #4a5568 !important;
+                border-radius: 8px !important;
+                padding: 1rem !important;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+            }
+            [data-testid="stMetricLabel"] {
+                color: #a0c4ff !important;
+            }
+            [data-testid="stMetricValue"] {
+                color: #e8e8e8 !important;
+                font-size: 1.5rem !important;
+                font-weight: bold !important;
+            }
+
             .st-dl{
                 background-color: transparent;
             } 
@@ -320,273 +359,73 @@ class UIComponents:
         """
 
     def _apply_theme(self):
-        """Inyecta el CSS del tema actual en la página para aplicar el estilo.
-
-        Llamar al inicio de `render_sidebar` / `render_main_chat_area` asegura que el tema se aplique cada rerun.
-        """
-        try:
-            css = self._get_theme_css()
-            st.markdown(css, unsafe_allow_html=True)
-            # Inject a small, safe JS helper that creates a floating visual clone of the Streamlit form.
-            # The clone is only visual (position:fixed). User typing is forwarded to the original hidden input
-            # and submission triggers the original Streamlit submit button. This avoids removing nodes
-            # from Streamlit's structure while giving a ChatGPT-like fixed input UI.
-            safe_js = """
-            <script>
-            (function(){
-                if(window._u_tutor_clone_created) return;
-
-                function createClone(origInput){
-                    try{
-                        const origForm = origInput.closest('form');
-                        const submitBtn = origForm ? (origForm.querySelector('button[type="submit"], button') ) : null;
-
-                        // Floating wrapper
-                        const floatWrap = document.createElement('div');
-                        floatWrap.id = 'u-tutor-floating-input';
-                        Object.assign(floatWrap.style, {
-                            position: 'fixed',
-                            bottom: '18px',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            width: 'min(1100px, calc(100% - 48px))',
-                            zIndex: 14000,
-                            display: 'flex',
-                            gap: '10px',
-                            alignItems: 'center',
-                            pointerEvents: 'auto'
-                        });
-
-                        // Visible input
-                        const visInput = document.createElement('input');
-                        visInput.id = 'u_tutor_vis_input';
-                        visInput.type = 'text';
-                        visInput.placeholder = origInput.placeholder || 'Escribe un mensaje...';
-                        // accessibility attributes to avoid browser helper text
-                        visInput.setAttribute('title', '');
-                        visInput.setAttribute('aria-label', visInput.placeholder);
-                        visInput.setAttribute('autocomplete', 'off');
-                        visInput.setAttribute('spellcheck', 'false');
-                        Object.assign(visInput.style, {
-                            flex: '1 1 auto',
-                            padding: '10px 12px',
-                            borderRadius: '12px',
-                            border: '1px solid rgba(0,0,0,0.12)',
-                            outline: 'none',
-                            minHeight: '42px',
-                            boxSizing: 'border-box',
-                            textAlign: 'left',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis'
-                        });
-
-                        // Visible button
-                        const visBtn = document.createElement('button');
-                        visBtn.id = 'u_tutor_vis_send';
-                        visBtn.type = 'button';
-                        visBtn.innerText = 'Enviar';
-                        Object.assign(visBtn.style, {
-                            borderRadius: '999px',
-                            padding: '10px 18px',
-                            cursor: 'pointer'
-                        });
-
-                        floatWrap.appendChild(visInput);
-                        floatWrap.appendChild(visBtn);
-                        document.body.appendChild(floatWrap);
-
-                        // Apply theme-aware colors (read CSS variables if present)
-                        try{
-                            const root = getComputedStyle(document.documentElement);
-                            const inputBg = root.getPropertyValue('--u-tutor-input-bg') || root.getPropertyValue('--u-tutor-sidebar-bg') || getComputedStyle(origInput).backgroundColor;
-                            const inputColor = root.getPropertyValue('--u-tutor-accent') || getComputedStyle(origInput).color;
-                            visInput.style.background = inputBg || '#0f1720';
-                            visInput.style.color = (inputColor || '#e6e6e6').trim();
-                        }catch(e){}
-
-                        // inject CSS to disable any focus scaling and remove browser helper overlays for this input
-                        try{
-                            const ss = document.createElement('style');
-                            ss.innerHTML = `
-                                #u_tutor_vis_input:focus { transform: none !important; box-shadow: 0 0 0 2px rgba(0,0,0,0.08) !important; }
-                                #u_tutor_vis_input::placeholder { color: rgba(230,230,250,0.6) !important; }
-                                #u_tutor_vis_input { caret-color: auto !important; }
-                            `;
-                            document.head.appendChild(ss);
-                        }catch(e){}
-
-                        // Sync values
-                        visInput.value = origInput.value || '';
-                        visInput.addEventListener('input', function(e){
-                            origInput.value = e.target.value;
-                            origInput.dispatchEvent(new Event('input', {bubbles:true}));
-                        });
-                        origInput.addEventListener('input', function(){
-                            if(document.activeElement !== visInput) visInput.value = origInput.value;
-                        });
-
-                        // Submit handlers
-                        visBtn.addEventListener('click', function(){
-                            if(submitBtn) { submitBtn.click(); }
-                            else { origInput.dispatchEvent(new KeyboardEvent('keydown', {key:'Enter', code:'Enter', keyCode:13, which:13, bubbles:true})); }
-                        });
-                        visInput.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); visBtn.click(); } });
-
-                        // Keep original accessible but visually hidden to avoid layout shifts
-                        origInput.style.opacity = '0';
-                        origInput.style.position = 'relative';
-                        origInput.style.zIndex = '0';
-
-                        // Adjust padding on chat container so messages don't hide under the fixed input
-                        function adjustPadding(){
-                            const chat = document.querySelector('.u-tutor-chat') || document.querySelector('.main');
-                            if(chat){
-                                const extra = floatWrap.offsetHeight + 24;
-                                chat.style.paddingBottom = extra + 'px';
-                            }
-                        }
-                        adjustPadding();
-                        window.addEventListener('resize', adjustPadding);
-
-                        // Observe size changes to adjust padding
-                        const ro = new ResizeObserver(adjustPadding);
-                        ro.observe(floatWrap);
-
-                        window._u_tutor_clone_created = true;
-                        return true;
-                    }catch(err){ console.log('u-tutor clone setup error', err); return false; }
-                }
-
-                function trySetup(){
-                    const input = document.querySelector('input#custom_prompt') || document.querySelector('form#chat_form input[type="text"]') || document.querySelector('input[aria-label*="Escribe tu mensaje"]') || document.querySelector('input[placeholder*="Escribe tu mensaje"]');
-                    if(input) return createClone(input);
-                    return false;
-                }
-
-                // MutationObserver to wait for Streamlit render
-                const observer = new MutationObserver((mut)=>{
-                    if(trySetup()){ observer.disconnect(); }
-                });
-                observer.observe(document.body, {childList:true, subtree:true});
-
-                // Fallback timeouts
-                [200,800,1500,3000].forEach(t => setTimeout(()=>{ if(trySetup()) observer.disconnect(); }, t));
-            })();
-            </script>
-            """
-            st.markdown(safe_js, unsafe_allow_html=True)
-        except Exception:
-            # No bloquear la app si la inyección falla
-            pass
+        """Aplica el tema actual - Delegado a main.py"""
+        # El tema ahora se aplica desde main.py
+        pass
     def render_model_selector(self):
         import os
         import streamlit as st
-        from langchain_openai import ChatOpenAI  # 👈 usa langchain_openai, no langchain.chat_models
+        from langchain_openai import ChatOpenAI
 
-        AVAILABLE_MODELS = ["gpt-4", "gpt-4o", "gpt-5", "gpt-5-mini"]
-        selected_model = st.sidebar.selectbox("🤖 Modelo de IA", AVAILABLE_MODELS, key="selected_model")
+        # Lista de modelos: se puede personalizar desde .env con AVAILABLE_MODELS
+        default_models = [
+            "gpt-4-turbo",
+            "gpt-4",
+            "gpt-4o",
+            "gpt-4o-mini",
+            "gpt-3.5-turbo",
+        ]
+
+        # Permitir personalización desde variable de entorno
+        custom_models = os.getenv("AVAILABLE_MODELS", "")
+        if custom_models:
+            AVAILABLE_MODELS = [m.strip() for m in custom_models.split(",")]
+        else:
+            AVAILABLE_MODELS = default_models
+
+        selected_model = st.sidebar.selectbox(
+            "🤖 Modelo de IA",
+            AVAILABLE_MODELS,
+            key="selected_model"
+        )
 
         if "chat_manager" in st.session_state:
             chat_manager = st.session_state.chat_manager
-            current_model = getattr(chat_manager.llm, "model", None)
+            current_model = getattr(chat_manager.llm, "model_name", None)
 
             if selected_model != current_model:
-                kwargs = {"model": selected_model, "api_key": os.getenv("OPENAI_API_KEY")}
+                kwargs = {
+                    "model_name": selected_model,
+                    "api_key": os.getenv("OPENAI_API_KEY")
+                }
 
-                # ⚙️ Solo agregar temperatura si el modelo lo soporta
-                if not selected_model.startswith("gpt-5"):
-                    kwargs["temperature"] = chat_manager.temperature
+                # Agregar temperatura (todos los modelos la soportan)
+                kwargs["temperature"] = chat_manager.temperature
 
-                # Reemplazar el modelo
-                chat_manager.llm = ChatOpenAI(**kwargs)
-                chat_manager.model = selected_model  # 👈 sincroniza el modelo interno
+                try:
+                    # Reemplazar el modelo
+                    chat_manager.llm = ChatOpenAI(**kwargs)
+                    chat_manager.model = selected_model
 
-                st.sidebar.success(f"Modelo cambiado a {selected_model}")
+                    # Limpiar el chat actual para empezar uno nuevo con el nuevo modelo
+                    st.session_state.current_conversation_id = None
+                    st.session_state.messages = []
+                    st.session_state.editing_title = None
+
+                    st.sidebar.success(f"✅ Modelo cambiado a {selected_model}")
+                    st.sidebar.info("💡 Chat limpiado - Inicia un nuevo chat con este modelo")
+                    st.rerun()
+                except Exception as e:
+                    st.sidebar.error(f"❌ Error al cambiar modelo: {str(e)}")
 
 
     def render_sidebar(self) -> Optional[int]:
-        """Renderiza el sidebar responsivo con menú popup independiente - U-TUTOR v5.0"""
+        """Renderiza el sidebar responsivo - U-TUTOR v5.0"""
         self._apply_theme()
-
-        theme = st.session_state.get("theme", "light")
-        primary_color = "#4B9CE2" if theme == "light" else "#1E88E5"
-        bg_color = "#FFFFFF" if theme == "light" else "#0E1117"
-        text_color = "#1E1E1E" if theme == "light" else "#EAEAEA"
-        hover_color = primary_color + "33"
-
-        # === CSS general (sidebar + popup) ===
-        st.markdown(f"""
-        <style>
-        .u-tutor-sidebar {{
-            background-color: {bg_color};
-            color: {text_color};
-            padding: 1rem;
-            border-right: 1px solid rgba(128,128,128,0.2);
-        }}
-        .sidebar-menu-button {{
-            background: transparent;
-            border: none;
-            font-size: 1.1rem;
-            cursor: pointer;
-            color: {text_color};
-            transition: all 0.2s ease;
-        }}
-        .sidebar-menu-button:hover {{
-            color: {primary_color};
-        }}
-
-        /* === POPUP FLOTANTE === */
-        .conversation-popup {{
-            position: fixed;
-            top: var(--popup-y, 50%);
-            left: var(--popup-x, 50%);
-            transform: translate(-50%, -50%);
-            background: {bg_color};
-            border: 1px solid rgba(128,128,128,0.3);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            border-radius: 10px;
-            padding: 0.5rem 0.75rem;
-            z-index: 9999;
-            min-width: 180px;
-        }}
-        .conversation-popup button {{
-            display: block;
-            width: 100%;
-            background: transparent;
-            border: none;
-            color: {text_color};
-            padding: 6px 10px;
-            text-align: left;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }}
-        .conversation-popup button:hover {{
-            background-color: {hover_color};
-            color: {primary_color};
-        }}
-        /* === Separador gris confiable === */
-        .sidebar-separator {{
-            height: 2px;
-            background-color: #D3D3D3;
-            margin: 10px 0;
-            border: 0;
-        }}
-        </style>
-        """, unsafe_allow_html=True)
+        # CSS del sidebar ahora está en styles_modern.css
 
         # === Sidebar principal ===
         st.sidebar.markdown("<div class='u-tutor-sidebar'>", unsafe_allow_html=True)
-        st.sidebar.markdown(
-    """
-    <div style="text-align:justify; margin-bottom:10px;">
-        <img src="https://i.ibb.co/Y7MKW6LD/vecteezy-graduation-item-graduation-hat-and-graduation-certificate-13078278.png" width="200">
-    </div>
-    """,
-    unsafe_allow_html=True
-)
         st.sidebar.markdown(
     """
     <div style="text-align:center;">
@@ -597,14 +436,16 @@ class UIComponents:
     unsafe_allow_html=True
 )
 
-       # Línea divisoria gruesa gris dentro del sidebar
-        
+        # Línea divisoria
         st.sidebar.markdown("<div class='sidebar-separator'>__________________________</div>", unsafe_allow_html=True)
-        st.sidebar.markdown("" \
-        "")
-        
+        st.sidebar.markdown("")
+
+        # Indicador de estado de conexión
+        st.sidebar.markdown(" ")
+        st.sidebar.success("API Conectada")
+        st.sidebar.markdown(" ")
+
         # Botones generales
-        st.sidebar.markdown("ㅤ")
         st.sidebar.markdown("## 🔧 Configuraciones")
 
         if st.sidebar.button("⚙️ Ajustes", key="config_button"):
@@ -667,11 +508,11 @@ class UIComponents:
                         st.markdown(
                             f"""
                             <div style="
-                                background-color: rgba(0,0,0,0.03);
+                                background-color: rgba(100,150,255,0.15);
                                 border-radius: 8px;
-                                padding: 8px;
-                                margin: 5px 0 10px 0;
-                                border: 1px solid rgba(0,0,0,0.1);
+                                padding: 10px;
+                                margin: 8px 0 12px 0;
+                                border: 2px solid rgba(100,150,255,0.4);
                             ">
                             """, unsafe_allow_html=True
                         )
@@ -717,38 +558,55 @@ class UIComponents:
                                 st.error(f"❌ Error al eliminar: {e}")
 
                         # ===== DESCARGAR =====
-                        conv_title, file_content = export_conversation()
-                        if file_content:
+                        if st.button("📥 Descargar", key=f"prepare_download_{conv_id}", use_container_width=True):
+                            conv_title, file_content = export_conversation()
+                            if file_content:
+                                st.session_state[f"download_data_{conv_id}"] = (conv_title, file_content)
+
+                        # Mostrar botón de descarga solo si hay datos
+                        if st.session_state.get(f"download_data_{conv_id}"):
+                            conv_title, file_content = st.session_state[f"download_data_{conv_id}"]
                             st.download_button(
-                                label=f"📥 Descargar {conv_title}",
+                                label=f"✅ {conv_title[:20]}...",
                                 data=file_content,
                                 file_name=f"{conv_title}.md",
                                 mime="text/markdown",
-                                key=f"download_{conv_id}"
+                                key=f"download_actual_{conv_id}",
+                                use_container_width=True
                             )
 
                         # ===== EDITAR =====
                         if not st.session_state.get(f"editing_{conv_id}", False):
-                            if st.button("✏️ Editar nombre", key=f"edit_btn_{conv_id}"):
+                            if st.button("✏️ Editar nombre", key=f"edit_btn_{conv_id}", use_container_width=True):
                                 st.session_state[f"editing_{conv_id}"] = True
+                                st.rerun()
                         else:
+                            st.markdown("**✏️ Renombrar conversación:**")
+                            # Obtener el título actual de la conversación
+                            conv_data = self.db_manager.get_conversation_by_id(conv_id)
+                            current_title = conv_data[1] if conv_data else title
                             new_name = st.text_input(
                                 "Nuevo nombre",
-                                value=conv_title,
-                                key=f"edit_input_{conv_id}"
+                                value=current_title,
+                                key=f"edit_input_{conv_id}",
+                                placeholder="Escribe el nuevo nombre..."
                             )
-                            c1, c2 = st.columns([1, 1])
-                            if c1.button("💾 Guardar", key=f"save_edit_{conv_id}"):
-                                if new_name.strip() and new_name != conv_title:
-                                    edit_conversation(new_name)
-                                else:
-                                    st.warning("⚠️ Ingresa un nombre diferente")
-                            if c2.button("❌ Cancelar", key=f"cancel_edit_{conv_id}"):
-                                st.session_state[f"editing_{conv_id}"] = False
+                            c1, c2 = st.columns([1, 1], gap="small")
+                            with c1:
+                                if st.button("💾 Guardar", key=f"save_edit_{conv_id}", use_container_width=True):
+                                    if new_name.strip() and new_name != current_title:
+                                        edit_conversation(new_name)
+                                    else:
+                                        st.warning("⚠️ Ingresa un nombre diferente")
+                            with c2:
+                                if st.button("❌ Cancelar", key=f"cancel_edit_{conv_id}", use_container_width=True):
+                                    st.session_state[f"editing_{conv_id}"] = False
+                                    st.rerun()
 
                         # ===== ELIMINAR =====
-                        if st.button("🗑️ Eliminar", key=f"del_btn_{conv_id}"):
-                            delete_conversation()
+                        if st.button("🗑️ Eliminar", key=f"del_btn_{conv_id}", use_container_width=True):
+                            with st.spinner("Eliminando..."):
+                                delete_conversation()
 
                         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -999,139 +857,59 @@ class UIComponents:
         st.markdown("</div>", unsafe_allow_html=True)
 
     def _render_quick_suggestions(self):
-        """Renderiza sugerencias rápidas para iniciar conversación - U-TUTOR v5.0"""
-        st.markdown("### 💡 Sugerencias para empezar:")
-        
-        suggestions = [
-            ("📐", "Explícame el teorema de Pitágoras"),
-            ("🌱", "¿Cómo funciona la fotosíntesis?"),
-            ("➗", "Ayúdame con ecuaciones cuadráticas"),
-            ("💻", "¿Qué es la programación orientada a objetos?"),
-            ("🧪", "Explica la tabla periódica"),
-            ("📊", "¿Qué es la estadística descriptiva?"),
-        ]
-        
-        cols = st.columns(2)
-        for idx, (emoji, suggestion) in enumerate(suggestions):
-            with cols[idx % 2]:
-                if st.button(f"{emoji} {suggestion}", key=f"suggest_{idx}", use_container_width=True):
-                    st.session_state.pending_message = suggestion
-                    st.rerun()
+        """
+        Renderiza sugerencias en expander colapsable para ahorrar espacio.
+        El usuario puede expandir solo si desea ver las sugerencias.
+        """
+        with st.expander("💡 Ver sugerencias de conversación", expanded=False):
+            suggestions = [
+                ("📐", "Explícame el teorema de Pitágoras"),
+                ("🌱", "¿Cómo funciona la fotosíntesis?"),
+                ("➗", "Ayúdame con ecuaciones cuadráticas"),
+                ("💻", "¿Qué es la programación orientada a objetos?"),
+                ("🧪", "Explica la tabla periódica"),
+                ("📊", "¿Qué es la estadística descriptiva?"),
+            ]
+
+            cols = st.columns(2)
+            for idx, (emoji, suggestion) in enumerate(suggestions):
+                with cols[idx % 2]:
+                    if st.button(
+                        f"{emoji} {suggestion}",
+                        key=f"suggest_{idx}",
+                        use_container_width=True
+                    ):
+                        st.session_state.pending_message = suggestion
+                        st.rerun()
 
 
     def render_chat_messages(self, messages: List[dict]):
-        """Renderiza los mensajes del chat centrado y limpio - U-TUTOR v5.0"""
+        """Renderiza los mensajes del chat - CSS en styles_modern.css"""
         if st.session_state.show_config_page:
             return
 
-        # Aplicar tema antes de mostrar mensajes
+        # Aplicar tema
         self._apply_theme()
 
-         # Contenedor principal
+        # Contenedor principal
         chat_container = st.container()
 
-        # 💅 CSS local para centrar el chat
-        st.markdown("""
-        <style>
-        /* Contenedor general del chat */
-        .u-tutor-messages {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            position: relative;
-            width: 100%;
-            max-width: 900px;
-            margin: 0 auto;              /* Centra el chat */
-            z-index: 1;
-        }
-
-        /* Cada mensaje ocupa toda la línea */
-        .u-tutor-message {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            margin: 10px 0;
-        }
-
-        /* Mensaje del asistente */
-.u-tutor-message.assistant > div {
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    width: 80%;
-    max-width: 700px;
-    gap: 4px;
-}
-
-/* Bloque de texto del asistente */
-.u-tutor-message.assistant > div > div:not(.u-tutor-avatar) {
-    text-align: justify;
-    margin: 15px 20px;
-    font-size: 14px;
-    line-height: 1.4;
-    color: var(--text-color, #eaeaea);
-    background: rgba(255,255,255,0.03);
-    padding: 15px;
-    border-radius: 10px;
-    border-left: 4px solid #a0c4ff;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    flex: 1;
-}
-
-        /* Mensaje del usuario */
-        .u-tutor-bubble-user {
-            background-color: #0078D4;
-            color: white;
-            padding: 10px 14px;
-            border-radius: 16px 16px 4px 16px;
-            max-width: 70%;
-            text-align: left;
-            word-wrap: break-word;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-        }
-
-        /* Avatar usuario */
-        .u-tutor-avatar.user {
-            font-size: 20px;
-            margin-left: 8px;
-        }
-                    
-
-        /*  🔹 Responsivo para móviles */
-        @media (max-width: 768px) {
-            .u-tutor-messages {
-                max-width: 95%;
-                padding: 10px 0 80px 0;
-            }
-            .u-tutor-message.assistant div {
-                font-size: 13px;
-                margin: 10px 12px;
-                line-height: 1.4;
-            }
-            .u-tutor-bubble-user {
-                font-size: 13px;
-                max-width: 85%;
-            }
-                    
-        }
-        </style>
-        """, unsafe_allow_html=True)
-
-        # 🧩 Renderizado de los mensajes
+        # Renderizado de los mensajes
         with chat_container:
             st.markdown("<div class='u-tutor-messages'>", unsafe_allow_html=True)
 
-            for idx, message in enumerate(messages):
+            # Mostrar solo los ultimos 50 mensajes para optimizar rendimiento
+            messages_to_display = messages[-50:] if len(messages) > 50 else messages
+
+            for idx, message in enumerate(messages_to_display):
                 role = message.get("role", "user")
                 content = message.get("content", "")
 
                 if role == "user":
                     html = f"""
-                    <div class='u-tutor-message user' 
-                    style='display: flex; justify-content: center; width: 100%;'>
-                    <div style='display: flex; align-items: center; gap: 8px; margin: 15px 0;
-                            justify-content: flex-end; flex-direction: row; width: 80%; max-width: 700px;'>
+                    <div class='u-tutor-message user'>
+                    <div style='display: flex; align-items: flex-end; gap: 8px;
+                            justify-content: flex-end; flex-direction: row-reverse;'>
                         <div class='u-tutor-bubble-user'>{content}</div>
                         <div class='u-tutor-avatar user'>👤</div>
                     </div>
@@ -1141,9 +919,9 @@ class UIComponents:
                 else:
                     html = f"""
     <div class='u-tutor-message assistant'>
-    <div>
+    <div style='display: flex; align-items: flex-start; gap: 8px;'>
         <div class='u-tutor-avatar assistant'>🎓</div>
-        <div>{content}</div>
+        <div style='flex: 1;'>{content}</div>
     </div>
 </div>
                     """
@@ -1163,8 +941,9 @@ class UIComponents:
 
             st.markdown("</div>", unsafe_allow_html=True)
 
-    
+
     def _add_tts_button(self, text: str, message_index: int):
+        """Renderiza botón de TTS optimizado - CSS movido a styles_modern.css"""
         conv_id = st.session_state.get('current_conversation_id', 'new')
         unique_key = f"{conv_id}_{message_index}"
 
@@ -1174,43 +953,37 @@ class UIComponents:
         if f'audio_data_{unique_key}' not in st.session_state:
             st.session_state[f'audio_data_{unique_key}'] = None
 
-        # CSS del botón (solo estilo visual)
-        
+        # 🔹 Crear layout del botón con contenedor responsivo
+        container_class = f"tts-button-container-{unique_key.replace('_', '-')}"
+        st.markdown(f'<div class="{container_class}">', unsafe_allow_html=True)
 
-# Contenedor con el id correcto
+        col_button, col_space = st.columns([1, 10], gap="small")
 
+        with col_button:
+            if st.session_state[f'audio_playing_{unique_key}']:
+                if st.button("⏸️", key=f"pause_{unique_key}", help="Pausar audio", use_container_width=True):
+                    st.session_state[f'audio_playing_{unique_key}'] = False
+                    st.rerun()
+            else:
+                if st.button("▶️", key=f"play_{unique_key}", help="Reproducir audio", use_container_width=True):
+                    with st.spinner("Generando audio..."):
+                        processed_text = self.tts_manager.preprocess_text_for_tts(text)
+                        audio_data = self.tts_manager.text_to_speech_fast(processed_text)
+                        if audio_data:
+                            st.session_state[f'audio_data_{unique_key}'] = audio_data
+                            st.session_state[f'audio_playing_{unique_key}'] = True
+                            st.rerun()
+                        else:
+                            st.error("❌ Error al generar audio")
 
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        # 🔹 Crear layout con columnas dentro del flujo del mensaje
-        col_spaceaudio,col_text, col_tts,col_spaceaudio2 = st.columns([1,1,5,1], gap="small")
-        with col_text:
-            pass  # Aquí no ponemos nada, solo usamos el ancho visual
-
-        with col_tts:
-            # Contenedor único del botón
-            with st.container():
-                
-                st.markdown('<div id="tts-button">', unsafe_allow_html=True)
-                if st.session_state[f'audio_playing_{unique_key}']:
-                    if st.button("⏸️", key=f"pause_{unique_key}", help="Pausar audio"):
-                        st.session_state[f'audio_playing_{unique_key}'] = False
-                        st.rerun()
-                else:
-                    if st.button("▶️", key=f"play_{unique_key}", help="Reproducir audio"):
-                        with st.spinner("Generando audio..."):
-                            processed_text = self.tts_manager.preprocess_text_for_tts(text)
-                            audio_data = self.tts_manager.text_to_speech_fast(processed_text)
-                            if audio_data:
-                                st.session_state[f'audio_data_{unique_key}'] = audio_data
-                                st.session_state[f'audio_playing_{unique_key}'] = True
-                                st.rerun()
-                            else:
-                                st.error("❌ Error al generar audio")
-                st.markdown('</div>', unsafe_allow_html=True)
-
-        # 🔊 Reproduce el audio si está listo
+        # 🔊 Reproduce el audio si está listo (con contenedor responsivo)
         if st.session_state[f'audio_data_{unique_key}']:
+            audio_container_class = f"tts-audio-container-{unique_key.replace('_', '-')}"
+            st.markdown(f'<div class="{audio_container_class}">', unsafe_allow_html=True)
             st.audio(st.session_state[f'audio_data_{unique_key}'], format='audio/mp3')
+            st.markdown('</div>', unsafe_allow_html=True)
 
 
     

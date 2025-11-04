@@ -1,7 +1,9 @@
 
-# U-Tutor v3.0
+# U-Tutor v5.0
 
-U-Tutor v3.0 es un asistente educativo inteligente diseñado para ayudar a estudiantes con sus dudas académicas. La aplicación está construida con Python y utiliza tecnologías modernas para ofrecer una experiencia de aprendizaje interactiva y personalizada.
+U-Tutor v5.0 es un asistente educativo inteligente diseñado para ayudar a estudiantes con sus dudas académicas. La aplicación está construida con Python y utiliza tecnologías modernas para ofrecer una experiencia de aprendizaje interactiva y personalizada.
+
+> **Nota:** A partir de v5.0, ejecuta la aplicación con: `streamlit run chat_limpio.py`
 
 ## ✨ Funcionalidades Activas
 
@@ -72,29 +74,31 @@ U-Tutor v3.0 es un asistente educativo inteligente diseñado para ayudar a estud
 
 ```
 chatbot-unab/
-├── main.py                    # 🚀 Punto de entrada principal de la aplicación
-├── chat_manager.py           # 🤖 Gestión de IA y respuestas con streaming
-├── database_manager.py       # 💾 Gestión de base de datos SQLite con context managers
-├── ui_components.py          # 🎨 Componentes de interfaz de usuario (sidebar, configuración)
-├── audio_manager.py          # 🔊 Gestión de audio (TTS local + gTTS, caché inteligente)
-├── styles.css               # 🎨 Estilos CSS personalizados y temas
-├── requirements.txt         # 📦 Dependencias del proyecto
-├── example.env              # 🔑 Archivo de ejemplo para variables de entorno
-├── README.md               # 📖 Documentación del proyecto
-├── app_v1.py               # 📜 Versión anterior (legacy)
-├── app_v2_onefile.py       # 📜 Versión anterior (legacy)
-├── ChatBot.ipynb           # 📓 Notebook de desarrollo
-└── venv/                   # 🐍 Entorno virtual de Python
+├── chat_limpio.py             # 🚀 PRINCIPAL: Punto de entrada de v5.0 (Streamlit nativo, sin bugs)
+├── chat_manager.py            # 🤖 Gestión de IA y respuestas con streaming
+├── database_manager.py        # 💾 Gestión de base de datos SQLite
+├── TTSManager.py              # 🔊 Gestión de texto a voz (TTS)
+├── audio_manager.py           # 🔊 Gestión de reconocimiento de voz
+├── requirements.txt           # 📦 Dependencias del proyecto
+├── .env                       # 🔑 Variables de entorno (incluye OPENAI_API_KEY)
+├── README.md                  # 📖 Documentación del proyecto
+├── ESTRUCTURA_FINAL.md        # 📋 Guía de estructura y cleanup
+├── QUICK_START.txt            # 🚀 Guía de inicio rápido
+├── venv/                      # 🐍 Entorno virtual de Python
+└── .git/                      # 📝 Control de versión
 ```
 
-### 📋 Descripción de Módulos
+### 📋 Descripción de Módulos (v5.0)
 
-- **`main.py`**: Aplicación principal con configuración y flujo de chat
+- **`chat_limpio.py`** ⭐ **NUEVO:** Aplicación principal completamente rediseñada usando componentes nativos de Streamlit
+  - Elimina todos los bugs de sidebar y CSS
+  - 600+ líneas, código limpio y organizado en 7 secciones
+  - Integra: database_manager, chat_manager, TTSManager, audio_manager
+
 - **`chat_manager.py`**: Motor de IA con streaming, validaciones y generación de títulos inteligentes
-- **`database_manager.py`**: Gestión eficiente de SQLite con context managers y estadísticas avanzadas
-- **`ui_components.py`**: Interfaz completa con sidebar, configuración, estadísticas y gestión de conversaciones
-- **`audio_manager.py`**: Sistema de audio optimizado con TTS local, caché inteligente y fallback a gTTS
-- **`styles.css`**: Estilos personalizados para diseño profesional y responsive
+- **`database_manager.py`**: Gestión eficiente de SQLite con CRUD completo
+- **`TTSManager.py`**: Sistema de texto a voz optimizado con múltiples backends (pyttsx3, edge-tts, gTTS)
+- **`audio_manager.py`**: Reconocimiento de voz y gestión de audio
 
 ## 🚀 Instalación y Uso
 
@@ -134,8 +138,10 @@ chatbot-unab/
 
 5. **Ejecutar la aplicación:**
    ```bash
-   streamlit run main.py
+   streamlit run chat_limpio.py
    ```
+
+   La aplicación se abrirá en: `http://localhost:8501`
 
 ### 🔧 Configuración Inicial
 

@@ -139,8 +139,8 @@ if not openai_api_key:
     st.error("Por favor, configura tu OPENAI_API_KEY en el archivo .env")
     st.stop()
 
-# Inicializar LLM
-llm = ChatOpenAI(model="gpt-5", temperature=0, api_key=openai_api_key)
+# Inicializar LLM (sin especificar api_key explícitamente - usa la variable de entorno)
+llm = ChatOpenAI(model="gpt-4", temperature=0)
 
 # Sidebar para gestión de conversaciones
 st.sidebar.title("Historial de Chats")

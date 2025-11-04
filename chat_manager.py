@@ -1,17 +1,19 @@
 # U-TUTOR v3.0 - Mejoras en chat_manager.py: Streaming, validaciones mejoradas y personalidades
 from typing import List, Dict, Any
 from langchain_openai import ChatOpenAI
+from langchain_core.messages import BaseMessage
 
 
 class ChatManager:
     def __init__(self, api_key: str, model: str, temperature: float = 0.7):
         """Inicializa ChatManager con temperatura configurable - U-TUTOR v3.0"""
         self.llm = ChatOpenAI(
-            model=model,
-            temperature=temperature,
-            api_key=api_key
+            api_key=api_key,  # type: ignore
+            model_name=model,  # type: ignore
+            temperature=temperature  # type: ignore
         )
-        self.system_message = """Eres Jake, un tutor universitario empático y profesional. 
+        self.model = model  # Almacenar el nombre del modelo para referencia rápida
+        self.system_message = """Eres Jake, un tutor universitario empático y profesional.
         Ayuda al estudiante con sus dudas, habla como humano y nunca reveles que eres una IA."""
         self.temperature = temperature
     
@@ -30,7 +32,13 @@ class ChatManager:
         try:
             api_messages = self.prepare_messages_for_api(messages)
             response = self.llm.invoke(api_messages)
-            return response.content
+            # Asegurar que retornamos string
+            if isinstance(response.content, str):
+                return response.content
+            elif isinstance(response.content, list):
+                # Si es lista, convertir a string
+                return str(response.content)
+            return str(response.content)
         except Exception as e:
             raise Exception(f"Error al obtener respuesta del modelo: {str(e)}")
     
@@ -47,24 +55,26 @@ class ChatManager:
         try:
             if target_language == 'es':
                 return text  # No traducir si ya está en español
-            
+
             # Crear prompt de traducción
             translation_prompt = [
                 ("system", f"""Eres un traductor experto. Traduce el siguiente texto al {target_language.upper()}.
-                
+
                 Reglas:
                 - Mantén el tono y estilo del texto original
                 - Preserva el formato (markdown, listas, etc.)
                 - Traduce solo el contenido, no agregues explicaciones
                 - Si el texto ya está en {target_language.upper()}, devuélvelo tal como está
-                
+
                 Responde SOLO con la traducción, nada más."""),
                 ("human", text)
             ]
-            
+
             response = self.llm.invoke(translation_prompt)
-            return response.content.strip()
-            
+            # Asegurar que obtenemos string
+            content = response.content if isinstance(response.content, str) else str(response.content)
+            return content.strip()
+
         except Exception as e:
             print(f"Error en traducción: {e}")
             return text  # Devolver texto original si falla la traducción
@@ -81,7 +91,7 @@ class ChatManager:
             # Preparar mensajes para generar título
             title_prompt = [
                 {"role": "system", "content": """Eres un asistente que genera títulos concisos y descriptivos para conversaciones educativas.
-                
+
                 Reglas:
                 - Máximo 40 caracteres
                 - Usa palabras clave del tema principal
@@ -89,13 +99,15 @@ class ChatManager:
                 - Usa español
                 - NO incluyas emojis
                 - Ejemplos: "Matemáticas: Ecuaciones", "Biología: Fotosíntesis", "Programación: POO"
-                
+
                 Responde SOLO con el título, nada más."""},
                 {"role": "user", "content": f"Genera un título para esta conversación:\n\n{self._format_messages_for_title(messages)}"}
             ]
-            
+
             response = self.llm.invoke(title_prompt)
-            title = response.content.strip()
+            # Asegurar que obtenemos string
+            content = response.content if isinstance(response.content, str) else str(response.content)
+            title = content.strip()
             
             # Limpiar y validar el título
             title = title.replace('"', '').replace("'", '').strip()
@@ -158,7 +170,7 @@ class ChatManager:
         self.system_message = personalities.get(personality_type, self.system_message)
 
     def update_temperature(self, new_temperature: float):
-        """Actualiza la temperatura del modelo - U-TUTOR v3.0"""
+        """Actualiza la temperatura del modelo - U-TUTOR v5.0"""
         self.temperature = new_temperature
         self.llm.temperature = new_temperature
         
