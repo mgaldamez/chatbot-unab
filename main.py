@@ -124,12 +124,14 @@ class UTutorApp:
             conv_id = int(conv_id[0])
             action = action[0]
             if action == "download":
-                self._export_conversation_direct(conv_id)
+                # TODO: Implementar export directo
+                pass
             elif action == "rename":
                 st.session_state.editing_title = conv_id
                 st.rerun()
             elif action == "delete":
-                self._delete_conversation_direct(conv_id)
+                # TODO: Implementar delete directo
+                pass
     def _apply_theme(self):
         """Aplica colores temáticos dinámicos - OPTIMIZADO CON CACHE"""
         theme = st.session_state.get('theme', 'blueish')
@@ -232,15 +234,19 @@ class UTutorApp:
         if "current_audio" not in st.session_state:
             st.session_state.current_audio = None
 
-        if "voice_input_active" not in st.session_state:
-            st.session_state.voice_input_active = False
-
         if "menu_counter" not in st.session_state:
             st.session_state.menu_counter = 0
 
         # Inicializar flag de espera de respuesta
         if "await_response" not in st.session_state:
             st.session_state.await_response = False
+
+        # PLAN: Flags para cancelación graceful de generación
+        if "generation_cancelled" not in st.session_state:
+            st.session_state.generation_cancelled = False
+
+        if "cancelled_at_message" not in st.session_state:
+            st.session_state.cancelled_at_message = None
 
         # Inicializar configuración (temperatura y personalidad)
         if "temperature" not in st.session_state:
@@ -275,8 +281,7 @@ class UTutorApp:
 
         # Si hay una respuesta pendiente por parte del asistente, generarla aquí
         if st.session_state.get('await_response'):
-            # Clear flag first to avoid re-entrancy during generation
-            st.session_state.await_response = False
+            print("🔵 [LOG] Detectado await_response=True, generando respuesta...")
             self._generate_assistant_response()
 
         # Reproducir audio si está solicitado
@@ -307,7 +312,7 @@ class UTutorApp:
                 if cache_size > 0:
                     st.info(f"⚡ Caché activo: {cache_size} archivos guardados para reproducción rápida")
                 
-                with st.spinner(f"🎵 Generando audio en {lang_name}..."):
+                with st.spinner():
                     import time
                     start_time = time.time()
                     
@@ -386,7 +391,7 @@ class UTutorApp:
     # ------------------ MANEJO DE INPUT ------------------
     def _handle_user_input(self):
         """
-        Maneja la entrada de texto del usuario - U-TUTOR v5.0
+        Maneja la entrada de texto del usuario con input FIJO en la parte inferior - U-TUTOR v5.0
         """
 
         # 1️⃣ No mostrar input si estamos en la página de configuración
@@ -405,46 +410,41 @@ class UTutorApp:
             st.session_state.user_input = ""
             st.session_state.clear_input = False
 
+        # 3️⃣ Renderizar input FIJO al fondo de la pantalla
+        st.markdown('<div class="chat-input-fixed-container">', unsafe_allow_html=True)
+        st.markdown('<div class="chat-input-fixed-inner">', unsafe_allow_html=True)
 
-        # 4️⃣ Renderizar contenedor del input
-        with st.container():
-            st.markdown('<div class="input-container">', unsafe_allow_html=True)
-            st.markdown('<div class="input-wrapper">', unsafe_allow_html=True)
+        col_input, col_button = st.columns([20, 1], gap="small")
 
-            # 5️⃣ Columnas responsivas
-            col_input, col_button = st.columns([10, 1], gap="small")
+        # 4️⃣ Input de texto - RENDERIZADO FIJO
+        with col_input:
+            prompt = st.text_input(
+                label="Mensaje",
+                key="user_input",
+                placeholder="Escribe tu pregunta...",
+                label_visibility="collapsed"
+            )
 
-            # 6️⃣ Input de texto
-            with col_input:
-                prompt = st.text_input(
-                    label="Mensaje",
-                    key="user_input",
-                    placeholder="Escribe tu mensaje...",
-                    label_visibility="collapsed"
-                )
+        # 5️⃣ Botón de enviar - RENDERIZADO FIJO
+        with col_button:
+            send_button = st.button("➤", use_container_width=True, key="send_button", help="Enviar (Enter)")
 
-            # 7️⃣ Botón de enviar
-            with col_button:
-                st.markdown('<div class="send-button-wrapper">', unsafe_allow_html=True)
-                send_button = st.button("➤", use_container_width=True, key="send_button")
-                st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-            st.markdown('</div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+        # 6️⃣ Detectar si el usuario envió el mensaje
+        if (send_button or (prompt and prompt.strip() != "")) and not st.session_state.get("await_response", False):
 
-            # 8️⃣ Detectar si el usuario envió el mensaje
-            if (send_button or (prompt and prompt.strip() != "")) and not st.session_state.get("await_response", False):
+            current_prompt = prompt.strip()
 
-                current_prompt = prompt.strip()
+            # 7️⃣ Procesar el mensaje
+            self._process_user_message(current_prompt)
 
-                # 9️⃣ Procesar el mensaje
-                self._process_user_message(current_prompt)
+            # 8️⃣ Limpiar input en el próximo rerun
+            st.session_state.clear_input = True
 
-                # 10️⃣ Limpiar input en el próximo rerun
-                st.session_state.clear_input = True
-
-                # 11️⃣ Forzar rerun para actualizar la UI
-                st.rerun()
+            # 9️⃣ Forzar rerun para actualizar la UI
+            st.rerun()
 
 
     # ------------------ Procesar mensaje del usuario ------------------
@@ -496,18 +496,31 @@ class UTutorApp:
     def _generate_assistant_response(self):
         """
         Genera y muestra la respuesta del asistente con streaming - U-TUTOR v5.0
+        FIX: Mejor protección contra re-entrancy durante generación
         """
         try:
+            # FIX: Proteger contra re-entrancy - si ya estamos generando, salir
+            if st.session_state.get('_generating_response', False):
+                print("⚠️ [LOG] Ya estamos generando, saliendo...")
+                return
+
+            print("🟢 [LOG] Iniciando _generate_assistant_response()")
+            st.session_state._generating_response = True
             placeholder = st.empty()  # Placeholder para el spinner / mensaje temporal
 
             with self.ui_components.show_spinner("🤔 Jake está pensando..."):
 
                 full_response = ""
+                print(f"📨 [LOG] Llamando get_response_stream con {len(st.session_state.messages)} mensajes")
 
                 # 1️⃣ Recolectar respuesta en streaming
                 for chunk in self.chat_manager.get_response_stream(st.session_state.messages):
                     if hasattr(chunk, 'content') and chunk.content:
-                        full_response += chunk.content
+                        # Asegurar que es string antes de concatenar
+                        content = str(chunk.content) if chunk.content else ""
+                        full_response += content
+
+                print(f"✅ [LOG] Respuesta generada ({len(full_response)} caracteres)")
 
                 # 2️⃣ Post-procesar traducción para TTS si aplica
                 tts_language = st.session_state.get('tts_language', 'es')
@@ -520,6 +533,7 @@ class UTutorApp:
                     audio_response = full_response
 
                 # 3️⃣ Guardar mensaje del asistente en sesión y DB
+                print(f"💾 [LOG] Guardando mensaje en sesión y BD...")
                 st.session_state.messages.append({
                     "role": "assistant",
                     "content": full_response
@@ -529,21 +543,22 @@ class UTutorApp:
                     "assistant",
                     full_response
                 )
+                print(f"💾 [LOG] Mensaje guardado. Total mensajes: {len(st.session_state.messages)}")
 
-                # 4️⃣ Renderizar inmediatamente la burbuja del asistente
-                if full_response.strip():
-                    try:
-                        self.ui_components.render_chat_messages([
-                            {"role": "assistant", "content": full_response}
-                        ])
-                    except Exception:
-                        pass
-
-                # 5️⃣ Placeholder para botones de audio si quieres agregar
-                col1, col2 = st.columns([1, 10])
+                # 4️⃣ Marcar que ya no esperamos respuesta y recargar
+                st.session_state.await_response = False
+                print("🟡 [LOG] await_response establecido a False")
+                print("🔄 [LOG] Triggerando st.rerun() para mostrar el nuevo mensaje...")
+                st.rerun()  # ✅ FIX: Forzar rerun para renderizar el nuevo mensaje
 
         except Exception as e:
+            print(f"❌ [LOG] Error en _generate_assistant_response: {str(e)}")
             self._handle_api_error(e)
+        finally:
+            # FIX: Siempre limpiar flag de generación
+            st.session_state._generating_response = False
+            st.session_state.await_response = False
+            print("🔴 [LOG] Finalizando _generate_assistant_response()")
 
     
 

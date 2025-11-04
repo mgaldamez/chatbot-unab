@@ -52,4 +52,5 @@ pip-wheel-metadata/
 *.rar
 
 .met 
+.claude
 .txt~
